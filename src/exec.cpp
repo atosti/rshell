@@ -28,26 +28,31 @@ int main(int argc, char*argv[]){
 	char * tokInput = new char[input.size() + 1];
 	copy(input.begin(), input.end(), tokInput);//input2 now = rawInput
 	tokInput[input.size()] = '\0'; //Null terminates the array
-	cout << "tokInput: " << tokInput << endl; //FIXME
-
         char* token = strtok(tokInput, ";|&"); //parses rawInput
         int cnt = 0; //counter
-	string commands = input; //inputs have equal length
+	string commands = tokInput;
+
 	while(token != NULL){
 	    if(*token == '#'){
+		//token = strtok(NULL, "#");
+		//*token = '\0';
 		commands.at(cnt) = '\0';
 		token = NULL;
 	    }else{
-		commands.at(cnt) = *token;
-		token = strtok(NULL, ";|&");
-		cnt++;
+		token = strtok(NULL, ";|&"); //searches for Null and ignores connectors
+		cnt++; //increment count
 	    }
 	}
-	commands.at(cnt) = '\0';
-	cout << "commands(BEFORE): " << commands << endl;
-	cout << "Commands: " << commands << endl;//FIXME
-	strcpy(argv[0], commands.c_str());//Gives argv[] the command
-	//fork(); //Does this go here - FIXME
+	/*for(unsigned i = 0; i < commands.size(); i++){
+	    if(commands.at(i) == '\0');
+	    else{
+		commands.at(i) = tokInput[i];
+	    }
+	}*/
+
+	strcat(tokInput,"\0");
+	strcpy(argv[0], tokInput); //Gives argv[] the commands
+	
 	int pid = fork();
         if(pid == 0){ //child process
 	   //if(execvp(argv[0], &argv[0]) == -1){ - Old

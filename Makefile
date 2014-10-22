@@ -1,10 +1,13 @@
 compiler = "g++"
 opt = "-Wall -Werror -ansi - pedantic"
-$(opt)
-$(compiler) $(opt)
+out =./bin/rshell
+src=./src/exec.cpp
 
 all:
-
+    [-d "./bin"]
+    mkdir ./bin
+    g++ exec.cpp -0 bin/rshell
 target:
-   mkdir -p  bin
+    [-d "./bin"]
+    mkdir ./bin
     g++ exec.cpp -0 bin/rshell

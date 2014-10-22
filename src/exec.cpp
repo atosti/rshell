@@ -19,44 +19,43 @@ int main(int argc, char*argv[]){
     bool isRunning = true;
     while(isRunning){
         cout << "$"; //Prompt
-	string rawInput;
-	getline(cin, rawInput); //Holds a cstring of input (ie. "ls")	
-	if(rawInput == "exit"){ //ExitTest
+	string input;
+	getline(cin, input);
+	if(input == "exit"){ //Exit Test
 	    cout << "Exiting rshell..." << endl;
 	    return 0;
 	}
-	char input[10000]; //error?	
-	cout << "input[]: ";
-	for(unsigned i = 0; i < 100 && i < rawInput.length(); i++){
-	    input[i] = rawInput.at(i);
-	}
-        char* token = strtok(input, ";"); //parses of ; turning it to \0
-        int cnt = 0; //counter
-// Build tokenization here
+	char * tokInput = new char[input.size() + 1];
+	copy(input.begin(), input.end(), tokInput);//input2 now = rawInput
+	tokInput[input.size()] = '\0'; //Null terminates the array
+	cout << "tokInput: " << tokInput << endl; //FIXME
 
-/*
-        while(token != NULL){
-	    if(*token = '#'){ //Comment check
-	        argv[cnt] = NULL; //null terminates cmd loop
-	        token = NULL; //exits while loop
+        char* token = strtok(tokInput, ";|&"); //parses rawInput
+        int cnt = 0; //counter
+	string commands = input; //inputs have equal length
+	while(token != NULL){
+	    if(*token == '#'){
+		commands.at(cnt) = '\0';
+		token = NULL;
 	    }else{
-	        argv[cnt] = token;
-	        token = strtok(NULL, " ");
-	        cnt++;
-		cout << "token: " << token << endl; //FIXME line
+		commands.at(cnt) = *token;
+		token = strtok(NULL, ";|&");
+		cnt++;
 	    }
-        } //End tokenization
-*/
+	}
+	commands.at(cnt) = '\0';
+	cout << "commands(BEFORE): " << commands << endl;
+	cout << "Commands: " << commands << endl;//FIXME
+	strcpy(argv[0], commands.c_str());//Gives argv[] the command
+	//fork(); //Does this go here - FIXME
 	int pid = fork();
         if(pid == 0){ //child process
-	   // if(execvp(argv[0], &argv[0]) == -1){ - Old
+	   //if(execvp(argv[0], &argv[0]) == -1){ - Old
 	    if(execvp(argv[0], argv) == -1){
 	        perror("execvp failure");
 	    }
 	    exit(1);
-        }else if(pid == -1){
-	}
-	else{ //parent
+	}else{ //parent
 	    if(-1 == wait(NULL)){
 	        perror("wait() failure");
 	    }

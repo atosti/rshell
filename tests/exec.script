@@ -1,0 +1,44 @@
+Script started on Tue 21 Oct 2014 11:50:20 PM PDT
+~
+atost001@hammer $ cd Documents/CS100/HW0/src
+~/Documents/CS100/HW0/src
+atost001@hammer $ ./a.out
+$ls
+a.out  exec.cpp
+$echo
+
+$pwd
+/home/csmajs/atost001/Documents/CS100/HW0/src
+$ls -a
+execvp failure: No such file or directory
+$echo "test"
+execvp failure: No such file or directory
+$exit    ls || echo
+execvp failure: No such file or directory
+$ls && echo
+execvp failure: No such file or directory
+$ls  ; echo
+a.out  exec.cpp
+$ls #lol
+execvp failure: No such file or directory
+$#lol
+execvp failure: No such file or directory
+$exit ls
+execvp failure: No such file or directory
+$ls exit
+execvp failure: No such file or directory
+$|| echo
+execvp failure: No such file or directory
+$echo && ls || pwd; ls
+execvp failure: No such file or directory
+$&& echo
+execvp failure: No such file or directory
+$||  ; echo
+execvp failure: No such file or directory
+$exit
+Exiting rshell...
+~/Documents/CS100/HW0/src
+atost001@hammer $ exit
+exit
+
+Script done on Tue 21 Oct 2014 11:53:27 PM PDT

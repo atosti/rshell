@@ -10,50 +10,45 @@
 using namespace std;
 
 //___ERROR LIST___
-//if you enter lots of garbage with spaces inbetween, you get mult prompts
 //test exit after commands
-//test colons before/after commands
+//test semi-colons before/after commands
 //Prompt multi-prints when space-separated garbage is entered 
+//Test with whitespace before/inbetween/after commands
+//Test touch with large, small, and symbol commands
 
 int main(int argc, char*argv[]){
     bool isRunning = true;
     while(isRunning){
-        cout << "$"; //Prompt
+        cout << "$"; //Prints the Prompt
 	string input;
 	getline(cin, input);
-	if(input == "exit"){ //Exit Test
+	if(input == "exit"){ //Exit Check
 	    cout << "Exiting rshell..." << endl;
 	    return 0;
 	}
+	int cnt = 0;//where cnt used to be - FIXME
 	char * tokInput = new char[input.size() + 1];
-	copy(input.begin(), input.end(), tokInput);//input2 now = rawInput
-	tokInput[input.size()] = '\0'; //Null terminates the array
-        char* token = strtok(tokInput, ";|&"); //parses rawInput
-        int cnt = 0; //counter
-	string commands = tokInput;
+	copy(input.begin(), input.end(), tokInput);//tokInput now = input
+	tokInput[input.size()] = '\0'; //Null terminates array
+	char* token = strtok(tokInput, "-;|&\""); //parses rawInput
 
-	while(token != NULL){
-	    if(*token == '#'){
-		//token = strtok(NULL, "#");
-		//*token = '\0';
-		commands.at(cnt) = '\0';
+	while(token != NULL){//Tokenization
+	    cout << "token: " << token << endl;//output - FIXME
+	    /*if(*token == '#'){
+		strcpy(argv[cnt], "\0"); //null terminates argv
 		token = NULL;
-	    }else{
-		token = strtok(NULL, ";|&"); //searches for Null and ignores connectors
-		cnt++; //increment count
-	    }
+	    }*/
+	    argv[cnt] = token;//places tokens into argv
+	   // strcat(argv[cnt], "\0");//adds null char to argv
+	    token = strtok(NULL, "-;|&\" "); //looks for connectors
+	    cnt++; //increment count
 	}
-	/*for(unsigned i = 0; i < commands.size(); i++){
-	    if(commands.at(i) == '\0');
-	    else{
-		commands.at(i) = tokInput[i];
-	    }
-	}*/
-
-	strcat(tokInput,"\0");
-	strcpy(argv[0], tokInput); //Gives argv[] the commands
+	//strcat(argv[cnt], "\0");//Null terminates argv[]
+	for(int i = 0; i < cnt; i++){ //prints all values of argv[] - FIXME
+	    cout << "argv[" << i << "]: " << argv[i] << endl;
+	}
 	
-	int pid = fork();
+	int pid = fork();//forks the process
         if(pid == 0){ //child process
 	   //if(execvp(argv[0], &argv[0]) == -1){ - Old
 	    if(execvp(argv[0], argv) == -1){
@@ -66,5 +61,5 @@ int main(int argc, char*argv[]){
 	    }
         }
     }//end isRunning loop
-        return 0;
+    return 0;
 }

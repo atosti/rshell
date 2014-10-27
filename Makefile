@@ -6,8 +6,8 @@ ALLFILES = rshell.o exec.o ./bin
 all: rshell
 
 rshell: ./src/exec.o
-	${CC} ${CFLAGS} ./exec.o -o ./bin/rshell
+	${CC} ${CFLAGS} ./src/exec.o -o ./bin/rshell
 ./src/exec.o: ./src/exec.cpp
-	${CC} ${CFLAGS} -c ./src/exec.cpp -o ./exec.o
+	${CC} ${CFLAGS} -c ./src/exec.cpp -o ./src/exec.o
 clean:
 	rm -rf ${ALLFILES}

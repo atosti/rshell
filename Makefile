@@ -1,13 +1,12 @@
 CC = "g++"
 CFLAGS = "-Wall -Werror -ansi -pedantic"
 ALLFILES = rshell.o ./bin
-VPATH=src/exec.cpp
 
 all: rshell
 
 rshell: exec.o
 	${CC} exec.o -o rshell
-exec.o: exec.cpp
-	${CC} -c ${CFLAGS} -o src/exec.cpp -o exec.o
+./src/exec.o: ./src/exec.cpp
+	${CC} ${CFLAGS} -c ./src/exec.cpp -o ./src/exec.o
 clean:
 	rm -rf ${ALLFILES}

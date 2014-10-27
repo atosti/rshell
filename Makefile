@@ -6,12 +6,8 @@ ALLFILES = rshell.o exec.o ./bin
 all: rshell
 
 rshell: ./src/exec.o
-	if [ ! -d "bin" ]; \
-	then \
-		mkdir bin \
-	fi;
 	${CC} ${CFLAGS} ./src/exec.o -o ./bin/rshell
 ./src/exec.o: ./src/exec.cpp
-	${CC} ${CFLAGS} -c ./src/exec.cpp -o exec.o
+	${CC} ${CFLAGS} -c ./src/exec.cpp -o ./exec.o
 clean:
 	rm -rf ${ALLFILES}

@@ -9,7 +9,7 @@
 
 using namespace std;
 
-int main(int argc, char*argv[]){ 
+int main(int argc, char* argv[]){ 
     bool isOn = true; //Keeps track of whether rshell is still running
     string usrInput;
     while(isOn){
@@ -19,23 +19,55 @@ int main(int argc, char*argv[]){
 	char* inputCpy = new char[usrInput.length() + 1]; //pointer for input string
 	strcpy(inputCpy, usrInput.c_str()); //token now holds c-string copy of input
 
-	char* token = strtok(inputCpy, " ;"); //removes semicolons
 	unsigned cnt = 0; //counter for slots in argv[]
+	char* token = strtok(inputCpy, " ;"); //removes semicolons
+	//argv[cnt] = token;
+	//strcat(argv[cnt], "\0");
+	//cnt++;  //incrememnts once to account for initial strok call
+	
+//FIXME - How to separate different commands from each other? "ls -a; echo" shouldn't be
+//	"ls -a echo", it should be "ls -a" and then "echo"
+
 	while(token != NULL){
-	    cout << token << endl;//Fixme - remove later
 	    if(*token == '#'){ //Handles comments
 		token = NULL;
+	   // }else if(token == "||"){ //Will Handle OR
+	   // }else if(token == "&&"){ //Will Handle AND
 	    }else{ //Default scenario
-	        argv[cnt] = token;
-	        token = strtok(NULL, " ;");
-	        cnt++;
+	        //if(token == "exit") //Will handle exit
+		cout << "Token: " << token << endl;
+		argv[cnt] = token;
+		strcat(argv[cnt], "\0"); //Null terminates the string
+		token = strtok(NULL, " ;");
+		cnt++;
 	    }
 	}
-	for(unsigned i = 0; i < cnt; i++){
+	argv[cnt] = token;
+	strcat(argv[cnt], "\0");
+	cnt++;
+	strcpy(argv[cnt], "\0"); //Null terminates argv[]
+	
+	for(unsigned i = 0; i < 10; i++){
 	    cout << "Argv[" << i << "]: " << argv[i] << endl; //Fixme - remove later
 	}
+	
 
-
+	int pid = fork(); //Forks the process
+	if(pid == -1){
+	    perror("fork() failed");
+	    exit(1);
+	}else if(pid == 0){ //Child process
+	    cout << "I'm a kid again!"; //Fixme - remove later
+	    if(execvp(argv[0], argv) == -1){ //Fixme - argv[0]=a.out; argv 1 or 0?
+		perror("execvp() failed");
+	    }
+	    exit(1);
+	}else if(pid > 0){ //Parent function
+	    cout << "Get off my lawn!"; //Fixeme - remove later
+	    if(-1 == wait(0)){ //waits for child to finish before continuing
+	        perror("wait() failed");
+	    }
+	}
     }
     return 0;
 }

@@ -21,12 +21,14 @@ int main(int argc, char* argv[]){
 
 	unsigned cnt = 0; //counter for slots in argv[]
 	char* token = strtok(inputCpy, " ;"); //removes semicolons
+	
 	//argv[cnt] = token;
 	//strcat(argv[cnt], "\0");
 	//cnt++;  //incrememnts once to account for initial strok call
 	
 //FIXME - How to separate different commands from each other? "ls -a; echo" shouldn't be
 //	"ls -a echo", it should be "ls -a" and then "echo"
+//		It needs to null terminate argv[] after tokens are inserted
 
 	while(token != NULL){
 	    if(*token == '#'){ //Handles comments
@@ -38,20 +40,19 @@ int main(int argc, char* argv[]){
 		cout << "Token: " << token << endl;
 		argv[cnt] = token;
 		strcat(argv[cnt], "\0"); //Null terminates the string
-		token = strtok(NULL, " ;");
+		token = strtok(NULL, " ;"); //Should it also remove ';'?
 		cnt++;
 	    }
 	}
-	argv[cnt] = token;
-	strcat(argv[cnt], "\0");
-	cnt++;
-	strcpy(argv[cnt], "\0"); //Null terminates argv[]
+	strcat(argv[cnt - 1], "\0");
+	argv[cnt] = token; //Should null term argv[], as token will equal NULL
 	
+	/*
 	for(unsigned i = 0; i < 10; i++){
 	    cout << "Argv[" << i << "]: " << argv[i] << endl; //Fixme - remove later
 	}
+	*/
 	
-
 	int pid = fork(); //Forks the process
 	if(pid == -1){
 	    perror("fork() failed");
@@ -71,7 +72,6 @@ int main(int argc, char* argv[]){
     }
     return 0;
 }
-
 
 //---------------------OLD CODE BELOW THIS LINE---------------------
 

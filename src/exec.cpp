@@ -19,23 +19,15 @@ int main(int argc, char* argv[]){
 	strcpy(inputCpy, usrInput.c_str()); //inputCpy now holds c-string copy of input
 	unsigned cnt = 0; //counter for slots in argv[]
 	char* token = strtok(inputCpy, ";"); //removes semicolons
-	char* a[usrInput.length() + 1]; //Proper size? - FIXME
+	char* a[usrInput.length() + 1]; //Creates array of cmds + args; Proper size? - FIXME
 
-	//delete inputCpy; //FIXME - Deallocate memory later	
+	//delete inputCpy; //FIXME - Deallocate memory later?
 
 	while(token != NULL){
-	    if(*token == '#'){ //Handles comments
-		token = NULL;
-	   // }else if(token == "||"){ //Will Handle OR
-	   // }else if(token == "&&"){ //Will Handle AND
-	    }else{ //Default scenario
-	        //if(token == "exit") //Will handle exit
-		cout << "Token: " << token << endl;
-		a[cnt] = token;
-		//strcat(a[cnt], "\0"); //Null terminates the string - needed? FIXME
-		token = strtok(NULL, ";");
-		cnt++;
-	    }
+	    cout << "Token: " << token << endl;
+	    a[cnt] = token;
+	    token = strtok(NULL, ";");
+	    cnt++;
 	}//Removes semicolons
 	
 	strcat(a[cnt - 1], "\0");
@@ -53,39 +45,38 @@ int main(int argc, char* argv[]){
 	    cout << "I'm a kid again!" << endl; //Fixme - remove later
 	    
 	    //Now Tokenize a[] with " " as a delimiter and put it into argv[]
-	    int j = 0;
+	    int curr = 0;
 	    int pid2 = 1;
 	    cout << "Count: " << cnt << endl; //FIXME - Used to check val of cnt
 	    for(int i = 0; i < cnt; i++){
 		token = strtok(a[i], " "); //Resets token
-		cout << "Current Tokens: " << token << endl;
-	        j = 0;
+	        curr = 0;
 		pid = 1;
 		while(token != NULL){
 		    //cout << "NewToken: " << token << endl; //FIXME - Checks outputs
-		    argv[j] = token;
-		    strcat(argv[j], "\0");
-		    j++; //Might not be correct here
-		    token = strtok(NULL, " ");
-	        }
-	        strcat(argv[j], "\0");
-	        argv[j] = token;
-	        cout << "While loop finished" << endl; //FIXME - should print mult. times
-		//Should fork here, then restart the loop. In the fork, it should run execvp.
+		    if(token == "#"){
+			token = NULL;
+		    }else{
+		        argv[curr] = token;
+		        strcat(argv[curr], "\0");
+		        curr++; //Might not be correct here
+		        token = strtok(NULL, " ");
+	            }
+		}
+	        strcat(argv[curr], "\0"); //Null terms the string in the array
+	        argv[curr] = token; //Null terms the array
 		pid2 = fork();
 		if(pid2 == 0){
-		    if(execvp(argv[0], argv) == -1){
+		    if(execvp(argv[0], argv) == -1){ //Runs execvp on each cmd/arg combo
 			perror("execvp() failed");
 			exit(1);
 		    }
 		}
-		if(-1 == wait(0)){
+		if(-1 == wait(0)){ //waits on other processes so they execute in order
 		    perror("wait() failed");
 		    exit(1);
 		}
 	    }
-	    cout << "J: " << j << endl;
-	    cout << "Count(Final): " << cnt << endl;
 	}
    }//End while loop
 

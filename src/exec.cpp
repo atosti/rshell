@@ -17,18 +17,11 @@ int main(int argc, char* argv[]){
 	getline(cin, usrInput);
 
 	char* inputCpy = new char[usrInput.length() + 1]; //pointer for input string
-	strcpy(inputCpy, usrInput.c_str()); //token now holds c-string copy of input
-
+	strcpy(inputCpy, usrInput.c_str()); //inputCpy now holds c-string copy of input
 	unsigned cnt = 0; //counter for slots in argv[]
-	char* token = strtok(inputCpy, " ;"); //removes semicolons
-	
-	//argv[cnt] = token;
-	//strcat(argv[cnt], "\0");
-	//cnt++;  //incrememnts once to account for initial strok call
-	
-//FIXME - How to separate different commands from each other? "ls -a; echo" shouldn't be
-//	"ls -a echo", it should be "ls -a" and then "echo"
-//		It needs to null terminate argv[] after tokens are inserted
+	char* token = strtok(inputCpy, ";"); //removes semicolons
+	//delete inputCpy //FIXME - Deallocate mem later	
+	char* a[usrInput.length() + 1]; //Proper size? - FIXME
 
 	while(token != NULL){
 	    if(*token == '#'){ //Handles comments
@@ -38,38 +31,54 @@ int main(int argc, char* argv[]){
 	    }else{ //Default scenario
 	        //if(token == "exit") //Will handle exit
 		cout << "Token: " << token << endl;
-		argv[cnt] = token;
-		strcat(argv[cnt], "\0"); //Null terminates the string
-		token = strtok(NULL, " ;"); //Should it also remove ';'?
+		a[cnt] = token;
+		strcat(a[cnt], "\0"); //Null terminates the string - needed? FIXME
+		token = strtok(NULL, ";");
 		cnt++;
 	    }
-	}
-	strcat(argv[cnt - 1], "\0");
-	argv[cnt] = token; //Should null term argv[], as token will equal NULL
+	}//Removes semicolons
 	
-	/*
-	for(unsigned i = 0; i < 10; i++){
-	    cout << "Argv[" << i << "]: " << argv[i] << endl; //Fixme - remove later
-	}
-	*/
+	strcat(a[cnt - 1], "\0");
+	a[cnt] = token; //Should null term argv[], as token will equal NULL
 	
 	int pid = fork(); //Forks the process
 	if(pid == -1){
 	    perror("fork() failed");
 	    exit(1);
 	}else if(pid == 0){ //Child process
-	    cout << "I'm a kid again!"; //Fixme - remove later
+	    cout << "I'm a kid again!" << endl; //Fixme - remove later
+	    
+	    //Now Tokenize a[] with " " as a delimiter and put it into argv[]
+	    cnt = 0; //resets count
+	    token = strtok(a[cnt], " ");
+	    while(token != NULL){
+		cout << "NewToken: " << token << endl;
+		argv[cnt] = token;
+		strcat(argv[cnt], "\0");
+		cnt++;
+		token = strtok(NULL, " ");
+	    }
+	    strcat(argv[cnt - 1], "\0");
+	    argv[cnt] = token;
+
 	    if(execvp(argv[0], argv) == -1){ //Fixme - argv[0]=a.out; argv 1 or 0?
 		perror("execvp() failed");
 	    }
 	    exit(1);
 	}else if(pid > 0){ //Parent function
-	    cout << "Get off my lawn!"; //Fixeme - remove later
+	    cout << "Get off my lawn!" << endl; //Fixeme - remove later
 	    if(-1 == wait(0)){ //waits for child to finish before continuing
 	        perror("wait() failed");
 	    }
 	}
-    }
+    }//End while loop
+
+	/*
+	for(unsigned i = 0; i < 10; i++){
+	    cout << "Argv[" << i << "]: " << argv[i] << endl; //Fixme - remove later
+	}
+	*/
+
     return 0;
 }
 

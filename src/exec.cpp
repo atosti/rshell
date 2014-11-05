@@ -21,7 +21,7 @@ int main(int argc, char* argv[]){
 	char* token = strtok(inputCpy, ";"); //removes semicolons
 	char* a[usrInput.length() + 1]; //Creates array of cmds + args; Proper size? - FIXME
 
-	//delete inputCpy; //FIXME - Deallocate memory later?
+	//delete inputCpy; //FIXME - Deallocate memory later; try after first while loop?
 
 	while(token != NULL){
 	    cout << "Token: " << token << endl;

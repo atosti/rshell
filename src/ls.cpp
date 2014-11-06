@@ -12,8 +12,22 @@ using namespace std;
 #define FLAG_R 4
 
 int main(int argc, char** argv){
-    int flags = 0;
-    if(argv[0] == "ls"){
+    if(argc < 1){//If too few args are passed in
+	return 0;//should actually return an error, maybe
+    }
+    //bin/ls <FLAGS> <FILES/DIR> "bin/ls -al"
+    //or bin/ls <FILES/DIR> <FLAGS> "bin/ls test.cpp -l"
+
+    int flags = 0;//Holds flag values 
+    cout << "Flags: " << flags << endl;
+    flags |= FLAG_a;
+    cout << "Flags: " << flags << endl;
+    flags |= FLAG_l;
+    cout << "Flags: " << flags << endl;
+    flags |= FLAG_R;
+    cout << "Flags: " << flags << endl;
+
+    if(argv[1] == "ls"){
         for(int i = 1; i < argc; i++){ //Checks for flags
 	    if(argv[i][0] == '-'){
 	        for(int j = 1; argv[i][j] != 0; j++){
@@ -27,7 +41,8 @@ int main(int argc, char** argv){
 	        }
 	    }
         }
-        char const *dirName = "."; //dirName == curr file
+	char const *dirName;
+	dirName = ".";
         DIR *dirp = opendir(dirName);//opens current file as a directory stream
         if(errno != 0){ //if dirName fails to open
 	        cerr << "opendir error" << endl;

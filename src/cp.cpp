@@ -15,28 +15,28 @@ void GetPut(char * source, char * dest)
 {
 	ifstream ifs;
 	ofstream ofs;
-	ifs.exceptions(ifstream::failbit | ifstream::badbit);
-	ofs.exceptions(ifstream::failbit | ifstream::badbit);
-	try
-	{
+//	ifs.exceptions(ifstream::failbit | ifstream::badbit);
+//	ofs.exceptions(ifstream::failbit | ifstream::badbit);
+//	try
+//	{
 		ifs.open(source);
 		ofs.open(dest);
 		char c = ifs.get();
-		while(!ifs.eof())
+		while(ifs.is_open() && !ifs.eof())
 		{
-			if(ofs.good())
+			if(ofs.is_open())
 			{
 				ofs.put(c);
 			}
 			ifs.get(c);
 		}
-		ifs.close();
 		ofs.close();
-	}
+		ifs.close();
+/*	}
 	catch(ios_base::failure)
 	{
 		cerr << "Exception thrown opening/reading/closing file\n";
-	}
+	}*/
 }
 
 void ReadWriteChar(char * source, char * dest)

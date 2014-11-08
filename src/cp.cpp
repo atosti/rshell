@@ -15,28 +15,19 @@ void GetPut(char * source, char * dest)
 {
 	ifstream ifs;
 	ofstream ofs;
-//	ifs.exceptions(ifstream::failbit | ifstream::badbit);
-//	ofs.exceptions(ifstream::failbit | ifstream::badbit);
-//	try
-//	{
-		ifs.open(source);
-		ofs.open(dest);
-		char c = ifs.get();
-		while(ifs.is_open() && !ifs.eof())
-		{
-			if(ofs.is_open())
-			{
-				ofs.put(c);
-			}
-			ifs.get(c);
-		}
-		ofs.close();
-		ifs.close();
-/*	}
-	catch(ios_base::failure)
+	ifs.open(source);
+	ofs.open(dest);
+	char c = ifs.get();
+	while(ifs.is_open() && !ifs.eof())
 	{
-		cerr << "Exception thrown opening/reading/closing file\n";
-	}*/
+		if(ofs.is_open())
+		{
+			ofs.put(c);
+		}
+		ifs.get(c);
+	}
+	ofs.close();
+	ifs.close();
 }
 
 void ReadWriteChar(char * source, char * dest)
@@ -153,6 +144,25 @@ bool GetFiles(int argc, char** argv, char* source, char* dest)
 	return flag;
 }
 
+//check if a file exists and if it's a directory
+bool FileExists(char * dest)
+{
+	struct stat statBuf;
+	if(stat(dest, &statBuf) == 0)
+	{
+		if(S_ISDIR(statBuf.st_mode))
+		{
+			cerr << "error: Destination is a directory\n";
+		}
+		else
+		{
+			cerr << "Destination already exists\n";
+		}
+		return true;
+	}
+	return false;
+}
+
 int main(int argc, char ** argv)
 {
 	if(argc < 3)
@@ -165,10 +175,13 @@ int main(int argc, char ** argv)
 	memset(dest, '\0', 128);
 	if(GetFiles(argc, argv, source, dest))
 	{
+		if(FileExists(dest))
+		{
+			return 0;
+		}
 		Timer t;
 		double etime;
 		t.start();
-
 		//run get and put
 		GetPut(source, dest);
 		cout << "Times for in.get(char) and out.put(char)\n";
@@ -206,6 +219,9 @@ int main(int argc, char ** argv)
 		return 0;
 	}
 	//run most efficient one
-	GetPut(source, dest);
+	if(!FileExists(dest))
+	{
+		GetPut(source, dest);
+	}
 	return 0;
 }

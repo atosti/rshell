@@ -116,7 +116,6 @@ int main(int argc, char** argv){
             }
 	}
     } //End flag assignment/optional check
-  
     DIR *dirp;
     dirent *direntp;
     cout << "dirName: " << dirName << endl; //FIXME - Remove later

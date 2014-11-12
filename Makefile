@@ -1,26 +1,21 @@
-CFLAGS=-g -Wall -Werror -pedantic -ansi
-BIN="bin"
+CC = "g++"
+CFLAGS = "-g -Wall -Werror -ansi -pedantic"
+BIN = "./bin"
+#Add rshell to it's own bin directory
 
-all:
-	mkdir -p $(BIN)
-	cd bin; g++ ../src/main.cpp $(CFLAGS) -o rshell
-	cd bin; g++ ../src/ls.cpp $(CFLAGS) -o ls
-	cd bin; g++ ../src/cp.cpp $(CFLAGS) -o cp
-
-ls:
-	mkdir -p $(BIN)
-	cd bin; g++ ../src/ls.cpp $(CFLAGS) -o ls
-
-cp:
-	mkdir -p $(BIN)
-	cd bin; g++ ../src/cp.cpp $(CFLAGS) -o cp
-
-rshell:
-	mkdir -p $(BIN)
-	cd bin; g++ ../src/main.cpp $(CFLAGS) -o rshell
-
+.PHONY: all
+all: rshell ls cp
+ls: ./src/ls.o
+	if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+	g++ $(CFLAGS) ./src/ls.o -o ./bin/ls
+cp: ./src/cp.o
+	if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+	g++ $(CFLAGS) ./src/cp.o -o ./bin/cp
+rshell: ./src/exec.o
+	if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+	g++ $(CFLAGS) ./src/exec.o -o ./bin/rshell
 clean:
-	cd bin; if [ -a rshell ] ; then rm rshell; fi
-	cd bin; if [ -a ls ] ; then rm ls; fi
-	cd bin; if [ -a cp ] ; then rm cp; fi
+	cd bin; if [ -a rshell ] ; then rm -rf rshell; fi
+	cd bin; if [ -a ls ] ; then rm -rf ls; fi
+	cd bin; if [ -a cp ] ; then rm -rf cp; fi
 	rmdir bin

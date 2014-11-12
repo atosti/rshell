@@ -1,14 +1,21 @@
 CC = "g++"
 CFLAGS = "-g -Wall -Werror -ansi -pedantic"
-ALLFILES = rshell.o ./src/exec.o ./bin
+BIN = "./bin"
 #Add rshell to it's own bin directory
 
-all: rshell
-
+.PHONY: all
+all: rshell ls cp
+ls: ./src/ls.o
+	if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+	g++ $(CFLAGS) ./src/ls.o -o ./bin/ls
+cp: ./src/cp.o
+	if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+	g++ $(CFLAGS) ./src/cp.o -o ./bin/cp
 rshell: ./src/exec.o
 	if [ ! -d "./bin" ]; then mkdir "./bin"; fi
-	${CC} ${CFLAGS} ./src/exec.o -o ./bin/rshell
-exec.o: ./src/exec.cpp
-	${CC} ${CFLAGS} -c ./src/exec.cpp ./src/exec.o
+	g++ $(CFLAGS) ./src/exec.o -o ./bin/rshell
 clean:
-	rm -rf ${ALLFILES}
+	cd bin; if [ -a rshell ] ; then rm -rf rshell; fi
+	cd bin; if [ -a ls ] ; then rm -rf ls; fi
+	cd bin; if [ -a cp ] ; then rm -rf cp; fi
+	rmdir bin

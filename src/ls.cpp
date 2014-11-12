@@ -3,9 +3,14 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <pwd.h>
+#include <grp.h>
+#include <stdio.h>
 #include <iostream>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
+#include <vector>
 
 using namespace std;
 
@@ -20,163 +25,194 @@ using namespace std;
 //Test entering multiple files/directories in
 //Ensure that entering a directory enters that dir and outputs all files within it
 //If passed in file doesn't exist, print error
+//FIXME - if "./a.out syslink flags" gets passed, there's a seg fault
 
-void printLs(int flags, int statbuf, string fileName, dirent *direntp, DIR *dirp, char const *dirName, bool isSysLink){
-    while((direntp = readdir(dirp))){//for each file
-	if(fileName != ""){//reg file OR syslink was passed
-	    if((flags == 0) || (flags == 1)){
-		if(direntp->d_name == fileName){
-		    //If reg file...
-		    //If sys link...
-
-		    //cout << '-'; //because it's a reg file, not a dir
-		    cout << direntp->d_name << endl;
-		}
-	    }else if((flags == 2) || (flags == 3)){
-		if(direntp->d_name == fileName){
-		    //output THIS file only with -l info
-		    
-		}
-	    }else if((flags == 4) || (flags == 5)){
-		//if FileName is a directory
-		//if Curr file is directory - enter it
-		cout << direntp->d_name << endl;
-	    }else if((flags == 6) || (flags == 7)){
-		//-l AND -R are set
-		//if curr file is dir; enter it
-		//output with -l info
-	    }
-	}else{//directory or default was passed
-	    if((flags == 0) || (flags == 1)){
-		cout << direntp->d_name << endl;
-	    }else if((flags == 2) || (flags == 3)){
-		//output with -l info
-	    }else if((flags == 4) || (flags == 5)){
-		//if Curr file is directory - enter it
-		cout << direntp->d_name << endl;
-	    }else if((flags == 6) || (flags == 7)){
-		//-l AND -R are set
-		//if curr file is dir; enter it
-		//output with -l info
-	    }
-	}
-    }
-    return;
-}
-
-int main(int argc, char** argv){
-    if(argc < 1){//If too few args are passed in
-	return 0;//FIXME - should actually return an error, maybe
-    }
+//Input is as follows:
     //bin/ls <FLAGS> <FILES/DIR> "bin/ls -al"
     //or bin/ls <FILES/DIR> <FLAGS> "bin/ls test.cpp -l"
     //ls -l (second number?) is number of hardlinks
     //ls info or info ls
+int main(int argc, char** argv){
+    if(argc < 1){//If too few args are passed in
+	cout << "ls error: must enter at least 1 arguments" << endl;
+	exit(1); //Outputs an error
+    }
 
     struct stat statbuf;
     int flags = 0; //Holds value corresponding to flags active
     char const *dirName = "."; //if no dir named, then sets it to curr dir
-    string fileName = "";
+    string fileName = ""; //Holds name of non-directories that get passed in
     bool isSysLink = false; //Holds whether passed file is a sys link
+    bool isDir = false;
 
     for(int i = 1; i < argc; i++){ //Checks each argument
 	lstat(argv[i], &statbuf);//statbuf gets updated
         if(S_ISDIR(statbuf.st_mode)){//argv[]'s param is a directory
 	    statbuf.st_mode = 0;
 	    cout << "Aiyyo, I'm a directory!" << endl; //FIXME - remove later
+	    isDir = true;
 	    dirName = argv[i]; //Sets optional parameter into dir name
 	}else if(S_ISREG(statbuf.st_mode)){
 	    cout << "I'm a Regular File." << endl; //FIXME - rm later
-	    //statbuf.st_mode = 0; //FIXME - is this needed?
+	    statbuf.st_mode = 0;//Resets statbuf
 	    fileName = argv[i]; //Holds file name if reg file is passed in
 	}else if(S_ISLNK(statbuf.st_mode)){
 	    cout << "I am a system link!" << endl; //FIXME
-	    //statbuf.st_mode = 0; //FIXME - is this needed?
-	    if(lstat(".", &statbuf) == -1){ //formerly stat(dirName, &statbuf)
+	    if(lstat(".", &statbuf) == -1){
 		cerr << "stat() failed" << endl;
 		exit(1);
 	    }
 	    fileName = argv[i]; //Holds file name if sys link
 	    isSysLink = true;
+	    statbuf.st_mode = 0;//Resets statbuf
 	}else{ //argv[]'s param isn't reg file, should be a flag with '-'
-	    statbuf.st_mode = 0;//Not sure if legal; seems to work
+	    statbuf.st_mode = 0;//Resets statbuf
 	    if(argv[i][0] == '-'){
 	        for(int j = 1; argv[i][j] != 0; j++){
 	            if(argv[i][j] == 'a'){ //Sets -a
 		        flags |= FLAG_a;
-			cout << "Flag -a triggered!" << endl; //FIXME - remove later
+			cout << "Flag -a triggered!" << endl; //FIXME - remove
 	            }else if(argv[i][j] == 'l'){ //Sets -l
 		        flags |= FLAG_l;
-			cout << "Flag -l triggered!" << endl; //FIXME - remove later
+			cout << "Flag -l triggered!" << endl; //FIXME - remove
 	            }else if(argv[i][j] == 'R'){ //Sets -R
 		        flags |= FLAG_R;
-			cout << "Flag -R triggered!" << endl; //FIXME - remove later
+			cout << "Flag -R triggered!" << endl; //FIXME - remove
 	            }
 	        }
             }
 	}
     } //End flag assignment/optional check
+    
+    vector<string> v; //Vector to hold output
     DIR *dirp;
     dirent *direntp;
-    cout << "dirName: " << dirName << endl; //FIXME - Remove later
+    cout << "dirName: " << dirName << endl; //FIXME - Remove
     if((dirp = opendir(dirName)));
     else{
 	cerr << "opendir error" << endl; //Error check
     }
     cout << "---------------------" << endl;//FIXME - Remove later
-    if(flags == 0){ //only "ls" - Handles if ". .." appear
+    if((flags == 0) || (flags == 2) || (flags == 4)){ //handles . and ..
  	direntp = readdir(dirp);
 	direntp = readdir(dirp);
     }
-
-    printLs(flags, statbuf.st_mode, fileName, direntp, dirp, dirName, isSysLink); //Prints everything cleanly
-/*
-    if(flags == 0 || flags == 1){ //for "ls' and "ls -a"
-	if(fileName != ""){ //If reg. file passed
-	    while((direntp = readdir(dirp))){
-	        if(direntp->d_name != fileName);
-	        else{
-		    cout << direntp->d_name << endl;
-		    //FIXME - Output in a proper format
-	        }
-	    }
-        }else{//if default or directory was passed
-            while((direntp = readdir(dirp))){
-	        cout << direntp->d_name << endl;
-		//FIXME - Output in proper format
-            }
-        }
-    }else if(flags == 2){ //only "ls -l"
-	//FIXME - Error check when stat is called
-	
-    }else if(flags == 3){ //only "ls -la"
-
-    }else if(flags == 4){ //only "ls -R"
-
-    }else if(flags == 5){ //only "ls -aR"
-
-    }else if(flags == 6){ //only "ls -lr"
-
-    }else if(flags == 7){ //only "ls -alR"
-
-    }
-*/
-
-
-/*
-    if(fileName != ""){ //If regular file was passed
-	while((direntp = readdir(dirp))){
-	    if(direntp->d_name != fileName);
-	    else{
+    while((direntp = readdir(dirp))){//for each file
+	    if((flags == 0) || (flags == 1)){//ls or ls -a
+        	if((isDir) || (direntp->d_name == fileName)){
+		    v.push_back(direntp->d_name);
+		    //cout << direntp->d_name << endl;
+		}
+	    }else if((flags == 2) || (flags == 3)){//ls -l or ls -al
+		if((isDir) || (direntp->d_name == fileName)){
+		    if(isSysLink){
+		        cout << "l";
+		    }else if(isDir){ //check for something else here
+			cout << "d";
+		    }else{
+			cout << "-";
+		    }//End file type check
+		    
+		    char str[sizeof(dirName) + sizeof(direntp->d_name) + 128];
+		    strcpy(str, "./");
+		    strcat(str, dirName);
+		    strcat(str, "/");
+		    strcat(str, direntp->d_name);
+ 
+		    if(stat(str, &statbuf) == -1){//Sets statbuf
+			cerr << "stat() failed" << endl;
+			exit(1);
+	    	    }
+		    if(statbuf.st_mode & S_IRUSR){//Owner permissions
+			cout << "r";
+		    }else{
+			cout << "-";
+		    }
+		    if(statbuf.st_mode & S_IWUSR){
+			cout << "w";
+		    }else{
+		        cout << "-";
+		    }
+		    if(statbuf.st_mode & S_IXUSR){
+			cout << "x";
+		    }else{
+		        cout << "-";
+		    }
+		    if(statbuf.st_mode & S_IRGRP){//Group permissions
+			cout << "r";
+		    }else{
+		        cout << "-";
+		    }
+		    if(statbuf.st_mode & S_IWGRP){
+			cout << "w";
+		    }else{
+		        cout << "-";
+		    }
+		    if(statbuf.st_mode & S_IXGRP){
+			cout << "x";
+		    }else{
+		        cout << "-";
+		    }
+		    if(statbuf.st_mode & S_IROTH){//Other permissions
+			cout << "r";
+		    }else{
+		        cout << "-";
+		    }
+		    if(statbuf.st_mode & S_IWOTH){
+			cout << "w";
+		    }else{
+		        cout << "-";
+		    }
+		    if(statbuf.st_mode & S_IXOTH){
+			cout << "x";
+		    }else{
+		        cout << "-";
+		    }
+		    int num = 0;
+		    if(num = statbuf.st_nlink){//Num system links
+		        cout << " " << num << " ";
+		    }else{
+			cerr << "st_nlink error" << endl;
+			exit(1);
+		    }
+		    struct passwd *pwd;
+		    if((pwd = getpwuid(statbuf.st_uid)) != NULL){//User ID
+			cout << pwd->pw_name << " ";
+		    }else{
+			cerr << "Error with getpwuid()" << endl;
+			exit(1);
+		    }
+		    struct group *grp;
+		    if((grp = getgrgid(statbuf.st_gid)) != NULL){//Group ID
+			cout << grp->gr_name << " ";
+		    }else{
+			cerr << "Error with getgrgid()" << endl;
+			exit(1);
+		    }
+		    cout << statbuf.st_size << " "; //File size in bytes
+		    if(num = statbuf.st_mtime){//Time of last modification
+			time_t num;
+			char buffer [80];
+			struct tm *timeinfo;
+			time(&num);
+			timeinfo = localtime(&num);
+			strftime(buffer, 80, "%b %e %H:%M", timeinfo);
+			cout << buffer << " ";
+		    }else{
+			cerr << "st_mtime error" << endl;
+			exit(1);
+		    }
+		    cout << direntp->d_name << endl;//Cleans up output
+		}
+	    }else if((flags == 4) || (flags == 5)){
+		//if FileName is a directory
+		//if Curr file is directory - enter it
 		cout << direntp->d_name << endl;
+	    }else if((flags == 6) || (flags == 7)){//ls -lR and ls -alR
+		//-l AND -R are set
+		//if curr file is dir; enter it
+		//output with -l info
 	    }
-	}
-    }else{//if default or directory was passed
-        while((direntp = readdir(dirp))){
-	    cout << direntp->d_name << endl;
-        }
-    }
-*/
-
+    }	
     return 0;
 }

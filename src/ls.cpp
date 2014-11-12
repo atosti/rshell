@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -85,6 +86,7 @@ int main(int argc, char** argv){
     } //End flag assignment/optional check
     
     vector<string> v; //Vector to hold output
+    char temp[512];
     DIR *dirp;
     dirent *direntp;
     cout << "dirName: " << dirName << endl; //FIXME - Remove
@@ -97,28 +99,33 @@ int main(int argc, char** argv){
  	direntp = readdir(dirp);
 	direntp = readdir(dirp);
     }
-    while((direntp = readdir(dirp))){//for each file
+    while(direntp = readdir(dirp)){
+	v.push_back(direntp->d_name);
+    }
+    sort(v.begin(), v.end());
+
+    for(unsigned i = 0; i < v.size(); i++){
 	    if((flags == 0) || (flags == 1)){//ls or ls -a
-        	if((isDir) || (direntp->d_name == fileName)){
-		    v.push_back(direntp->d_name);
-		    //cout << direntp->d_name << endl;
+        	if((isDir) || (v.at(i) == fileName)){
+		    cout << v.at(i) << endl;
 		}
 	    }else if((flags == 2) || (flags == 3)){//ls -l or ls -al
-		if((isDir) || (direntp->d_name == fileName)){
+		if((isDir) || (v.at(i) == fileName)){
 		    if(isSysLink){
-		        cout << "l";
+			cout << "l";
 		    }else if(isDir){ //check for something else here
 			cout << "d";
 		    }else{
 			cout << "-";
 		    }//End file type check
 		    
-		    char str[sizeof(dirName) + sizeof(direntp->d_name) + 128];
+		    char str[sizeof(dirName) + sizeof(v.at(i)) + 128];
 		    strcpy(str, "./");
 		    strcat(str, dirName);
 		    strcat(str, "/");
-		    strcat(str, direntp->d_name);
- 
+		    string str1 = v.at(i);
+		    strcat(str, str1.c_str()); 
+
 		    if(stat(str, &statbuf) == -1){//Sets statbuf
 			cerr << "stat() failed" << endl;
 			exit(1);
@@ -141,17 +148,17 @@ int main(int argc, char** argv){
 		    if(statbuf.st_mode & S_IRGRP){//Group permissions
 			cout << "r";
 		    }else{
-		        cout << "-";
+			cout << "-";
 		    }
 		    if(statbuf.st_mode & S_IWGRP){
 			cout << "w";
 		    }else{
-		        cout << "-";
+			cout << "-";
 		    }
 		    if(statbuf.st_mode & S_IXGRP){
 			cout << "x";
 		    }else{
-		        cout << "-";
+			cout << "-";
 		    }
 		    if(statbuf.st_mode & S_IROTH){//Other permissions
 			cout << "r";
@@ -170,7 +177,7 @@ int main(int argc, char** argv){
 		    }
 		    int num = 0;
 		    if(num = statbuf.st_nlink){//Num system links
-		        cout << " " << num << " ";
+			cout << " " << num << " ";
 		    }else{
 			cerr << "st_nlink error" << endl;
 			exit(1);
@@ -196,23 +203,22 @@ int main(int argc, char** argv){
 			struct tm *timeinfo;
 			time(&num);
 			timeinfo = localtime(&num);
-			strftime(buffer, 80, "%b %e %H:%M", timeinfo);
 			cout << buffer << " ";
 		    }else{
 			cerr << "st_mtime error" << endl;
 			exit(1);
 		    }
-		    cout << direntp->d_name << endl;//Cleans up output
-		}
+		    cout << v.at(i) << endl;
 	    }else if((flags == 4) || (flags == 5)){
 		//if FileName is a directory
 		//if Curr file is directory - enter it
-		cout << direntp->d_name << endl;
+		cout << v.at(i) << endl;
 	    }else if((flags == 6) || (flags == 7)){//ls -lR and ls -alR
 		//-l AND -R are set
 		//if curr file is dir; enter it
 		//output with -l info
 	    }
-    }	
+	}
+    }
     return 0;
 }

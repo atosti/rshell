@@ -14,3 +14,16 @@ Bugs
 3) Cannot open rhsell within rhsell, gives a "no directory" error
 4) Cannot execute multiple commands, ands, or ors in the shell. It will treat them as command names. 
 
+
+Ls - Homework #1
+------------------
+This assignment mimics the ls bash script and has the flags -l and -a working along with optional file/directory parameters that can be passed in. Currently the -R script is not functional and will not do anything when run.
+
+Bugs:
+------
+1) If an invalid(non-existent) file is passed in, then no error is passed when there should be one.
+2) Sometimes passing in "dir/filename" as the optional param causes seg faults.
+3) Alphabetizes output, but does it in ASCII, so that capital letters precede lowercase. (ie A.txt, Z.txt, a.txt, d.txt)
+4) Passing in Multiple files/directories is largely untested and guaranteed to not work.
+5) Not all syscalls are error-checked due to unresolved errors causing some failures (likely a cause of the seg faults)
+6) Output is not ordered in columns.

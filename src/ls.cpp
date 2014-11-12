@@ -102,12 +102,12 @@ int main(int argc, char** argv){
     while((direntp = readdir(dirp))){
 	v.push_back(direntp->d_name);
     }
-    int check = 0;
-    if(closedir(dirp)){
+/*
+    if(closedir(dirp) != 0){
     }else{
 	cerr << "closedir error" << endl; //error check 
     }
-
+*/
     sort(v.begin(), v.end());
     for(unsigned i = 0; i < v.size(); i++){
 	    bool isValid = true; //Used to check with fileName's passed in

@@ -1,0 +1,251 @@
+Script started on Tue 11 Nov 2014 11:35:26 PM PST
+~
+atost001@hammer $ ls
+[0m[01;34mDesktop[0m/  [01;34mDocuments[0m/  [01;34mDownloads[0m/  [01;34mMusic[0m/  [01;34mPictures[0m/  [01;34mPublic[0m/  [01;34mTemplates[0m/  [01;34mVideos[0m/
+[m~
+atost001@hammer $ cd Documents/CS100/HW0
+~/Documents/CS100/HW0
+atost001@hammer $ ls
+LICENSE  Makefile  README.md  [0m[01;34msrc[0m/  [01;34mtests[0m/
+[m~/Documents/CS100/HW0
+atost001@hammer $ make
+if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+g++ "-g -Wall -Werror -ansi -pedantic" ./src/exec.o -o ./bin/rshell
+g++    -c -o src/ls.o src/ls.cpp
+if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+g++ "-g -Wall -Werror -ansi -pedantic" ./src/ls.o -o ./bin/ls
+if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+g++ "-g -Wall -Werror -ansi -pedantic" ./src/cp.o -o ./bin/cp
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls
+.git
+LICENSE
+Makefile
+README.md
+bin
+src
+tests
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -a
+.
+..
+.git
+LICENSE
+Makefile
+README.md
+bin
+src
+tests
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -a[Kl
+-rwx------ 8 atost001 csmajs 4096 Nov 11 23:33 .git
+drw------- 1 atost001 csmajs 56 Oct 21 15:01 LICENSE
+-rw------- 1 atost001 csmajs 599 Nov 11 22:10 Makefile
+-rw------- 1 atost001 csmajs 975 Oct 21 23:47 README.md
+-rwx------ 2 atost001 csmajs 4096 Nov 11 23:34 bin
+drwx------ 3 atost001 csmajs 4096 Nov 11 23:34 src
+drwx------ 2 atost001 csmajs 4096 Oct 21 23:53 tests
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -la
+-rwx------ 6 atost001 csmajs 4096 Nov 11 23:34 .
+drwx------ 10 atost001 csmajs 4096 Nov 11 23:24 ..
+drwx------ 8 atost001 csmajs 4096 Nov 11 23:33 .git
+drw------- 1 atost001 csmajs 56 Oct 21 15:01 LICENSE
+-rw------- 1 atost001 csmajs 599 Nov 11 22:10 Makefile
+-rw------- 1 atost001 csmajs 975 Oct 21 23:47 README.md
+-rwx------ 2 atost001 csmajs 4096 Nov 11 23:34 bin
+drwx------ 3 atost001 csmajs 4096 Nov 11 23:34 src
+drwx------ 2 atost001 csmajs 4096 Oct 21 23:53 tests
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -la[K[Kal
+-rwx------ 6 atost001 csmajs 4096 Nov 11 23:34 .
+drwx------ 10 atost001 csmajs 4096 Nov 11 23:24 ..
+drwx------ 8 atost001 csmajs 4096 Nov 11 23:33 .git
+drw------- 1 atost001 csmajs 56 Oct 21 15:01 LICENSE
+-rw------- 1 atost001 csmajs 599 Nov 11 22:10 Makefile
+-rw------- 1 atost001 csmajs 975 Oct 21 23:47 README.md
+-rwx------ 2 atost001 csmajs 4096 Nov 11 23:34 bin
+drwx------ 3 atost001 csmajs 4096 Nov 11 23:34 src
+drwx------ 2 atost001 csmajs 4096 Oct 21 23:53 tests
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -al[K[Kl -a
+opendir error
+Segmentation fault
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -l -a [K[K[K[K[Ka -l
+-rwx------ 6 atost001 csmajs 4096 Nov 11 23:34 .
+drwx------ 10 atost001 csmajs 4096 Nov 11 23:24 ..
+drwx------ 8 atost001 csmajs 4096 Nov 11 23:33 .git
+drw------- 1 atost001 csmajs 56 Oct 21 15:01 LICENSE
+-rw------- 1 atost001 csmajs 599 Nov 11 22:10 Makefile
+-rw------- 1 atost001 csmajs 975 Oct 21 23:47 README.md
+-rwx------ 2 atost001 csmajs 4096 Nov 11 23:34 bin
+drwx------ 3 atost001 csmajs 4096 Nov 11 23:34 src
+drwx------ 2 atost001 csmajs 4096 Oct 21 23:53 tests
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -a -l[K[K[K[K[Ksrc
+;
+Alpha.txt
+LinkFile.txt
+Zeta.txt
+a.out
+cp.cpp
+cp.o
+exec.cpp
+exec.o
+ls.cpp
+ls.o
+ls_tests
+syslink
+test
+testDir
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src -l
+-rw------- 1 atost001 csmajs 1679 Oct 23 15:00 ;
+-rw------- 1 atost001 csmajs 0 Nov 11 20:24 Alpha.txt
+-rw------- 1 atost001 csmajs 17 Nov 10 20:14 LinkFile.txt
+-rw------- 1 atost001 csmajs 0 Nov 11 20:24 Zeta.txt
+-rwx------ 1 atost001 csmajs 38844 Nov 11 23:33 a.out
+-rw------- 1 atost001 csmajs 69 Nov 11 22:11 cp.cpp
+-rw------- 1 atost001 csmajs 2168 Nov 11 22:11 cp.o
+-rw------- 1 atost001 csmajs 2460 Nov  4 19:13 exec.cpp
+-rw------- 1 atost001 csmajs 6208 Nov 11 21:59 exec.o
+-rw------- 1 atost001 csmajs 6711 Nov 11 23:33 ls.cpp
+-rw------- 1 atost001 csmajs 67048 Nov 11 23:34 ls.o
+-rw------- 1 atost001 csmajs 0 Nov 11 23:34 ls_tests
+-rw------- 1 atost001 csmajs 17 Nov 10 20:14 syslink
+-rw------- 1 atost001 csmajs 0 Nov 11 23:23 test
+-rwx------ 2 atost001 csmajs 4096 Nov 11 18:29 testDir
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src -l[Ka
+.
+..
+;
+Alpha.txt
+LinkFile.txt
+Zeta.txt
+a.out
+cp.cpp
+cp.o
+exec.cpp
+exec.o
+ls.cpp
+ls.o
+ls_tests
+syslink
+test
+testDir
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src -a[Kla
+-rwx------ 3 atost001 csmajs 4096 Nov 11 23:34 .
+drwx------ 6 atost001 csmajs 4096 Nov 11 23:34 ..
+drw------- 1 atost001 csmajs 1679 Oct 23 15:00 ;
+-rw------- 1 atost001 csmajs 0 Nov 11 20:24 Alpha.txt
+-rw------- 1 atost001 csmajs 17 Nov 10 20:14 LinkFile.txt
+-rw------- 1 atost001 csmajs 0 Nov 11 20:24 Zeta.txt
+-rwx------ 1 atost001 csmajs 38844 Nov 11 23:33 a.out
+-rw------- 1 atost001 csmajs 69 Nov 11 22:11 cp.cpp
+-rw------- 1 atost001 csmajs 2168 Nov 11 22:11 cp.o
+-rw------- 1 atost001 csmajs 2460 Nov  4 19:13 exec.cpp
+-rw------- 1 atost001 csmajs 6208 Nov 11 21:59 exec.o
+-rw------- 1 atost001 csmajs 6711 Nov 11 23:33 ls.cpp
+-rw------- 1 atost001 csmajs 67048 Nov 11 23:34 ls.o
+-rw------- 1 atost001 csmajs 0 Nov 11 23:34 ls_tests
+-rw------- 1 atost001 csmajs 17 Nov 10 20:14 syslink
+-rw------- 1 atost001 csmajs 0 Nov 11 23:23 test
+-rwx------ 2 atost001 csmajs 4096 Nov 11 18:29 testDir
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src -la[K[Kal
+-rwx------ 3 atost001 csmajs 4096 Nov 11 23:34 .
+drwx------ 6 atost001 csmajs 4096 Nov 11 23:34 ..
+drw------- 1 atost001 csmajs 1679 Oct 23 15:00 ;
+-rw------- 1 atost001 csmajs 0 Nov 11 20:24 Alpha.txt
+-rw------- 1 atost001 csmajs 17 Nov 10 20:14 LinkFile.txt
+-rw------- 1 atost001 csmajs 0 Nov 11 20:24 Zeta.txt
+-rwx------ 1 atost001 csmajs 38844 Nov 11 23:33 a.out
+-rw------- 1 atost001 csmajs 69 Nov 11 22:11 cp.cpp
+-rw------- 1 atost001 csmajs 2168 Nov 11 22:11 cp.o
+-rw------- 1 atost001 csmajs 2460 Nov  4 19:13 exec.cpp
+-rw------- 1 atost001 csmajs 6208 Nov 11 21:59 exec.o
+-rw------- 1 atost001 csmajs 6711 Nov 11 23:33 ls.cpp
+-rw------- 1 atost001 csmajs 67048 Nov 11 23:34 ls.o
+-rw------- 1 atost001 csmajs 0 Nov 11 23:34 ls_tests
+-rw------- 1 atost001 csmajs 17 Nov 10 20:14 syslink
+-rw------- 1 atost001 csmajs 0 Nov 11 23:23 test
+-rwx------ 2 atost001 csmajs 4096 Nov 11 18:29 testDir
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src -al[K[K[K[K[K[K[KREADME.md
+README.md
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls README.md -l
+-rw------- 1 atost001 csmajs 975 Oct 21 23:47 README.md
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls README.md -l[Ka
+README.md
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls README.md -al
+-rw------- 1 atost001 csmajs 975 Oct 21 23:47 README.md
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls README.md -al[K[Kla
+-rw------- 1 atost001 csmajs 975 Oct 21 23:47 README.md
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls README.md -la[K[K[K[K[K[K[K[K[K[K[K[K[Ksrc/ls.cpp
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src/ls.cpp -l
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src/ls.cpp -l[Ka
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src/ls.cpp -al
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src/ls.cpp -al[K[Kla
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls src/ls.cpp -la[K[K[K[K[K[K[K[K[K[K[K[K[K[Kasdfjhasdfjh
+.git
+LICENSE
+Makefile
+README.md
+bin
+src
+tests
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls asdfjhasdfjhasdfsadf[K[K[K[K -l
+opendir error
+Segmentation fault
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls asdfjhasdfjhasdf -l[Ka
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls asdfjhasdfjhasdf -a[Kla
+-rwx------ 6 atost001 csmajs 4096 Nov 11 23:34 .
+drwx------ 10 atost001 csmajs 4096 Nov 11 23:24 ..
+drwx------ 8 atost001 csmajs 4096 Nov 11 23:33 .git
+drw------- 1 atost001 csmajs 56 Oct 21 15:01 LICENSE
+-rw------- 1 atost001 csmajs 599 Nov 11 22:10 Makefile
+-rw------- 1 atost001 csmajs 975 Oct 21 23:47 README.md
+-rwx------ 2 atost001 csmajs 4096 Nov 11 23:34 bin
+drwx------ 3 atost001 csmajs 4096 Nov 11 23:34 src
+drwx------ 2 atost001 csmajs 4096 Oct 21 23:53 tests
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls asdfjhasdfjhasdf -la[K[Kal
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -l README.md
+-rw------- 1 atost001 csmajs 975 Oct 21 23:47 README.md
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -l README.md[K[K[K[K[K[K[K[K[K[K[Ka README.md
+README.md
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -a README.md[K[K[K[K[K[K[K[K[K[Kl README.md
+README.md
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -al README.md[K[K[K[K[K[K[K[K[K[K[K[K[K-la README.md
+README.md
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -la README.md[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[Kbin/ls -laR
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -laR[K[K[KR
+~/Documents/CS100/HW0
+atost001@hammer $ bin/ls -R[Kl -a -R
+~/Documents/CS100/HW0
+atost001@hammer $ exit
+exit
+
+Script done on Tue 11 Nov 2014 11:39:30 PM PST

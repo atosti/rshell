@@ -26,12 +26,11 @@ void tokenize(char* arr[], char* token, string delims){
 int main(int argc, char* argv[]){
     string usrInput; //Holds user input
     while(1){
+	unsigned cnt = 0; //counter for slots in argv[]
         cout << "$ "; //Prints prompt
 	getline(cin, usrInput);
 	char* inputCpy = new char[usrInput.length() + 1]; //pointer for input str
 	strcpy(inputCpy, usrInput.c_str()); //inputCpy holds c-str copy of input
-	unsigned cnt = 0; //counter for slots in argv[]
-	//char buf[usrInput.length() + 1];
 	char* token = strtok(inputCpy, ";"); //removes semicolons
 	char* a[usrInput.length() + 1]; //Creates array for cmds + args
 	while(token != NULL){ //Tokenizes semicolons
@@ -42,6 +41,7 @@ int main(int argc, char* argv[]){
 	strcat(a[cnt - 1], "\0");
 	a[cnt] = token; //Null terminates a[]
 
+	//Fork for each command (separated by semicolons)
 	int curr = 0;
 	for(int i = 0; i < cnt; i++){//Tokenizes a[] removing " "
 	    token = strtok(a[i], " "); //Resets token
@@ -53,15 +53,15 @@ int main(int argc, char* argv[]){
 		    delete inputCpy;
 		    exit(0);
 		}
+		
 		strcat(argv[curr], "\0"); //Null terms
 		token = strtok(NULL, " ");
 		curr++; 
 	    }
-	//}
 	    //strcat(argv[curr], "\0"); //Null terms the last string
 	    argv[curr] = token; //Null terms array
 	    if(argv[curr] == NULL){
-		cout << "Aight then. " << endl;
+	        cout << "argv[" << curr << "] is NULL" << endl;
 	    }
 /*
 	    int x = 0; //Used for traversing
@@ -108,6 +108,7 @@ int main(int argc, char* argv[]){
 		perror("wait() failed");
 		exit(1);
 	    }
+	}
         delete inputCpy; //Deallocates memory - Fixme, might go elsewhere
     }//End while loop
 

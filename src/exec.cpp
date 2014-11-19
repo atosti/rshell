@@ -60,38 +60,55 @@ int main(int argc, char* argv[]){
 	    }
 	    //strcat(argv[curr], "\0"); //Null terms the last string
 	    argv[curr] = token; //Null terms array
-	    if(argv[curr] == NULL){
+	   /* if(argv[curr] == NULL){
 	        cout << "argv[" << curr << "] is NULL" << endl;
-	    }
-/*
+	      }*/
+
+	    //Start of I/O Redirection
 	    int x = 0; //Used for traversing
 	    int y = 0; //argv[]'s strings' chars
-	    int lastSym = 0; //char location of last symbol in an argv[] string
-	    while(argv[x] != NULL){//for each - FIXME - WHY THE HELL DOES THIS NOT TRIGGER?!
+	    int lSym = 0;//char location of last symbol in an argv[] string
+	    int fSym = 0;//char loc of first symbol
+	    bool isFirst = true; //if first symbol
+	    while(argv[x] != NULL){//for each string
+		y = 0;//Resets y to beginning of a string
+		isFirst = true;
 		while(argv[x][y] != '\0'){// char in argv[]
 		    if(argv[x][y] == '>'){//is Output
+			cout << "Output found!" << endl;
 			//if count + 1 == ">", then is Append
-			lastSym = y;
+			if(isFirst){
+			    fSym = y;
+			    isFirst = false;
+			}
+
+			lSym = y;
 		    }else if(argv[x][y] == '<'){//is Input
-			lastSym = y;
+			cout << "Input found!" << endl;
+			if(isFirst){
+			    fSym = y;
+			    isFirst = false;
+			}
+			lSym = y;
 		    }else if(argv[x][y] == '|'){//is Pipe
-			lastSym = y;
+			cout << "Pipe found!" << endl;
+			if(isFirst){
+			    fSym = y;
+			    isFirst = false;
+			}
+			lSym = y;
 		    }
-		    //cout << "char" << y << ": " << argv[x][y] << endl;
+		    cout << "char" << y << ": " << argv[x][y] << endl;
 		    y++;//iterate through chars
-		}
+		}//End of a string
 		cout << "string" << x << ": " << argv[x] << endl;
-		//cout << "strcmp-argv[" << x++ << "]: " << strcmp(argv[x], "\0") << endl;
-		//End of a string
 		x++;//iterate through strings
-		y = 0; //Resets y to beginning of string
 	    }
-	    cout << "Final argv[" << x << "]: " << argv[x] << endl;	
+	    //cout << "Final argv[" << x << "]: " << argv[x] << endl;	
 
 	    //strcat(argv[curr], "\0"); //Null terms the last string
 	    //argv[curr] = token; //Null terms array
 
-*/
 	    int pid = fork();
 	    if(pid == -1){
 		perror("pid fork  failed");

@@ -42,22 +42,6 @@ int main(int argc, char* argv[]){
 	strcat(a[cnt - 1], "\0");
 	a[cnt] = token; //Null terminates a[]
 
-/*
-	int x = 0;
-	for(unsigned in = 0; in < cnt; in++){
-	    cout << "a[" << in << "]: " << a[in] << endl;
-	    x = in;
-	}
-
-//Old Fixme code - delete whenever checking for null in argv[] works
-	cout << "Test:" << endl;
-	cout << a[x+1] << endl;
-	
-	//cout << strcmp(a[x+1], "\0") << endl;
-	cout << "......." << endl;
-	return 0;
-*/
-
 	int curr = 0;
 	for(int i = 0; i < cnt; i++){//Tokenizes a[] removing " "
 	    token = strtok(a[i], " "); //Resets token
@@ -69,92 +53,45 @@ int main(int argc, char* argv[]){
 		    delete inputCpy;
 		    exit(0);
 		}
-		//_____Operator Checks - IO Redirection_____
-			//Note: curr - 1 is just the prior arg, you need to
-			//couple it with the flags/command it's passed with
-			//and redirect that OUTPUT to your output.txt
-			//--------------------------------------------------
-			//SOLUTION: Have an int "sym" that holds the position
-			//of the last found symbol and then do a for loop
-			//that combines all of the argv[]'s on one end
-			//together and all of the other end together as well
-			//and then update sym each time an operator is found
-			//be sure to iterate it after the for loop concat, tho
 		strcat(argv[curr], "\0"); //Null terms
 		token = strtok(NULL, " ");
 		curr++; 
-/*
-	    	int x = 0; //Used for traversing
-	   	int y = 0; //argv[]'s strings' chars
-		int lastSym = 0; //char location of last symbol in an argv[] string
-		while(strcmp(argv[x], "\0") != 0){//for each
-		    while(argv[x][y] != '\0'){// char in argv[]
-			if(argv[x][y] == '>'){//is Output
-			    //if count + 1 == ">", then is Append
-			    lastSym = y;
-			}else if(argv[x][y] == '<'){//is Input
-			    lastSym = y;
-			}else if(argv[x][y] == '|'){//is Pipe
-			    lastSym = y;
-			}
-			y++;//iterate through chars
-		    }
-		    //End of a string
-		    if(y > 0){//if there is a symbol in argv[x]
-			int pid2;
-			if((pid2 = fork()) == -1){
-			    perror("pid2() fork failed");
-			    exit(1);
-			}
-		    }
-		    x++;//iterate through strings
-		    y = 0; //Resets y to beginning of string
-		}
-*/
 	    }
-	    strcpy(argv[curr], "\0");
+	//}
 	    //strcat(argv[curr], "\0"); //Null terms the last string
-	    //argv[curr] = token; //Null terms array
+	    argv[curr] = token; //Null terms array
+	    if(argv[curr] == NULL){
+		cout << "Aight then. " << endl;
+	    }
+/*
 	    int x = 0; //Used for traversing
 	    int y = 0; //argv[]'s strings' chars
 	    int lastSym = 0; //char location of last symbol in an argv[] string
-	cout << "HALP" << endl;
-		while(argv[x][0] != '\0'){//for each - FIXME - WHY THE HELL DOES THIS NOT TRIGGER?!
-		    while(argv[x][y] != '\0'){// char in argv[]
-			if(argv[x][y] == '>'){//is Output
-			    //if count + 1 == ">", then is Append
-			    lastSym = y;
-			}else if(argv[x][y] == '<'){//is Input
-			    lastSym = y;
-			}else if(argv[x][y] == '|'){//is Pipe
-			    lastSym = y;
-			}
-			cout << "char" << y << ": " << argv[x][y] << endl;
-			y++;//iterate through chars
+	    while(argv[x] != NULL){//for each - FIXME - WHY THE HELL DOES THIS NOT TRIGGER?!
+		while(argv[x][y] != '\0'){// char in argv[]
+		    if(argv[x][y] == '>'){//is Output
+			//if count + 1 == ">", then is Append
+			lastSym = y;
+		    }else if(argv[x][y] == '<'){//is Input
+			lastSym = y;
+		    }else if(argv[x][y] == '|'){//is Pipe
+			lastSym = y;
 		    }
-		    cout << "string" << x << ": " << argv[x] << endl;
-		    cout << "strcmp-argv[" << x++ << "]: " << strcmp(argv[x], "\0") << endl;
-		    //End of a string
-		    /*if(y > 0){//if there is a symbol in argv[x]
-			int pid2;
-			if((pid2 = fork()) == -1){
-			    perror("pid2() fork failed");
-			    exit(1);
-			}
-			
-		    }*/
-		    x++;//iterate through strings
-		    y = 0; //Resets y to beginning of string
+		    //cout << "char" << y << ": " << argv[x][y] << endl;
+		    y++;//iterate through chars
 		}
-		cout << "Final argv[" << x << "]: " << argv[x] << endl;	
+		cout << "string" << x << ": " << argv[x] << endl;
+		//cout << "strcmp-argv[" << x++ << "]: " << strcmp(argv[x], "\0") << endl;
+		//End of a string
+		x++;//iterate through strings
+		y = 0; //Resets y to beginning of string
+	    }
+	    cout << "Final argv[" << x << "]: " << argv[x] << endl;	
 
 	    //strcat(argv[curr], "\0"); //Null terms the last string
 	    //argv[curr] = token; //Null terms array
-	    //for(int z = 0; z < curr; z++){
-	//	cout << "argv[" << z << "]: " << argv[z] << endl;
-	  //  }
-	    
 
+*/
 	    int pid = fork();
 	    if(pid == -1){
 		perror("pid fork  failed");
@@ -171,7 +108,6 @@ int main(int argc, char* argv[]){
 		perror("wait() failed");
 		exit(1);
 	    }
-	}
         delete inputCpy; //Deallocates memory - Fixme, might go elsewhere
     }//End while loop
 

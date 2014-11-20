@@ -141,19 +141,10 @@ int main(int argc, char* argv[]){
 		bool hasOp = false;
 	        redirect(argv, num, hasOp); //Calls check for i/o redirection
 
-		//FIXME - do these next lines even get called?
-		cerr << "-----------" << endl;
-	    	while(argv[num] != NULL){//counts length of ars in argv
-		    cerr << "argv[" << num << "]: " << argv[num] << endl;
-		    num++;
-	        }
-		cerr << "-----------" << endl;
-
 		/*if(hasOp == true){//Confirm that real cmds don't get called twice
 		    //This should avoid children from running execvp multiple times
 		    exit(0);
 		}*/
-		//Create new arr[] here?
 
 	        int pid3 = fork();
 	        if(pid3 == -1){
@@ -171,6 +162,7 @@ int main(int argc, char* argv[]){
 		    perror("wait() failed");
 		    exit(1);
 	        }
+		exit(0);
 	    //end pid2 process
 	    }else{//pid2 parent
 		if(-1 == wait(0)){

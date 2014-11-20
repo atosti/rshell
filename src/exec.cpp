@@ -23,7 +23,7 @@ void tokenize(char* arr[], char* token, string delims){
     return;
 }*/
 
-void redirect(char* argv[], int num, bool hasOp){//consider making a bool to check if any operators are found
+void redirect(char* argv[], int num){//consider making a bool to check if any operators are found
     int x = 0;
     int y = 0;
     int last = -1;//char loc. of last symbol
@@ -31,35 +31,39 @@ void redirect(char* argv[], int num, bool hasOp){//consider making a bool to che
 
     while(x != num){//for each string
         y = 0;//Resets y to beginning of a string
-	while(argv[x][y] != '\0'){// char in argv[]
-	    if(argv[x][y] == '>'){//is Output
+	while(argv[x][y] != '\0'){//char in argv[]
+	    if(argv[x][y] == '>'){//Output
 		if(argv[x][y+1] == '>'){//Append
+		    cerr << "Append found!" << endl;
 		    flags = 1;
-		    hasOp = true;
+		    last = x;
+		    y++; //used to avoid second > in >> being read as a solo >
 		}else{
-		    //cout << "Output found!" << endl;
+		    cerr << "Output found!" << endl;
 		    last = x;
 		    flags = 0;
-		    hasOp = true;
 		}
 	    }else if(argv[x][y] == '<'){//is Input
-		//cout << "Input found!" << endl;
+		cerr << "Input found!" << endl;
 		flags = 2;
-		hasOp = true;
 	    }else if(argv[x][y] == '|'){//is Pipe
-		//cout << "Pipe found!" << endl;
+		cerr << "Pipe found!" << endl;
 		flags = 3;
-		hasOp = true;
 	    }
 	    y++;//iterate through chars
 	}//End of a string
 	x++;//iterate through strings
     }
-    if(flags == 0){//Output
-	if(last == (x - 1)){//Ends with >
-	    cout << "error: expected argument for '>'" << endl; 
-	    exit(0);
-	}else if(last == 0){//Symbol is first cmd
+    if(flags == 0 || flags == 1){//Output or Append
+	if(last == (x - 1)){//Ends with '>' or '>>'
+	    if(flags == 0){
+	    	cerr << "error: expected argument for >" << endl; 
+	    	exit(0);
+	    }else if(flags == 1){
+		cerr << "error: expected argument for >>" << endl;
+		exit(0);
+	    }
+	}else if((last == 0) && (flags == 0)){//'>' comes first
 	    int fdo = open(argv[x - 1], O_WRONLY);
 	    if(fdo == -1){
 		perror("open output");
@@ -68,20 +72,34 @@ void redirect(char* argv[], int num, bool hasOp){//consider making a bool to che
 	    close(1);
 	    dup(fdo);
 	    cout << "";//FIXME - Should clear the output file
-	}else{
+	}else if((last == 0) && (flags == 1)){ // '>>' comes first
+	    //Do nothing - Confirm it should do nothing
+	    //FIXME - can prolly just delete this
+	}else if(flags == 0){
 	    int fdo = open(argv[x - 1], O_WRONLY);
 	    if(fdo == -1){
 		perror("open output2");
 		exit(1);
 	    }
 	    close(1);//close stdout
-	    dup(fdo); //fdo is now in slot 1(stdout)
+	    dup(fdo);//fdo is now in slot 1 (stdout)
 	    strcpy(argv[x-1], "\0"); //FIXME - may cause issues
 	    strcpy(argv[x-2], "\0"); //Handle if x-2 and x-1 don't exist?
+	}else if(flags == 1){
+	    int fdo = open(argv[x - 1], O_WRONLY | O_APPEND);
+	    if(fdo == -1){
+		perror("open append");
+		exit(1);
+	    }
+	    close(1);
+	    dup(fdo);
+	    strcpy(argv[x-1], "\0");
+	    strcpy(argv[x-2], "\0");
 	}
     }
+    //} //FIXME - Ensure this was just misplaced from before
     if(flags != -1){//Recursive call
-	redirect(argv, last, hasOp);
+	redirect(argv, last);
     }
     return;
 
@@ -135,8 +153,7 @@ int main(int argc, char* argv[]){
 		    num++;
 	        }
 		cerr << "-----------" << endl;
-		bool hasOp = false;
-	        redirect(argv, num, hasOp); //Calls check for i/o redirection
+	        redirect(argv, num); //Calls check for i/o redirection
 
 	        int pid3 = fork();
 	        if(pid3 == -1){

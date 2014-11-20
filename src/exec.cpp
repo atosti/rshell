@@ -23,14 +23,13 @@ void tokenize(char* arr[], char* token, string delims){
     return;
 }*/
 
-void redirect(char* argv[], int num){//consider making a bool
+void redirect(char* argv[], int num){//consider making a bool to check if any operators are found
     int x = 0;
     int y = 0;
     int last = -1;//char loc. of last symbol
     int flags = -1; //Holds val corresponding to type of sym
 
     while(x != num){//for each string
-	//cout << argv[x] << endl; 
         y = 0;//Resets y to beginning of a string
 	while(argv[x][y] != '\0'){// char in argv[]
 	    if(argv[x][y] == '>'){//is Output
@@ -49,10 +48,8 @@ void redirect(char* argv[], int num){//consider making a bool
 		//cout << "Pipe found!" << endl;
 		flags = 3;
 	    }
-	    //cout << "char" << y << ": " << argv[x][y] << endl;
 	    y++;//iterate through chars
 	}//End of a string
-	//cout << "string" << x << ": " << argv[x] << endl;
 	x++;//iterate through strings
     }
     //cout << "Flags before check: " << flags << endl;
@@ -65,7 +62,6 @@ void redirect(char* argv[], int num){//consider making a bool
 	    //FIXME - need to fdo open then cout will overwrite output file
 	    cout << "";//Clears the output file
 	}else{
-	    //cout << "argv[x-1]: " << argv[x-1] << endl;
 	    int fdo = open(argv[x - 1], O_WRONLY);
 	    if(fdo == -1){
 		perror("open output");
@@ -73,15 +69,15 @@ void redirect(char* argv[], int num){//consider making a bool
 		//Go back to prompt
 	        //ensure execvp is NOT run on this
 	    }
-	    //cout << "Modding fd's..." << endl;
 	    close(1);//close stdout
 	    dup(fdo); //fdo is now in slot 1(stdout)
 	}
     }
-    //cout << "After mods, last: " << last << endl;
     if(flags != -1){//Recursive call
 	redirect(argv, last);
     }
+    cerr << "argv[x]: " << argv[x] << endl;
+    execvp(argv[0], argv);
     return;
 
 }
@@ -131,7 +127,7 @@ int main(int argc, char* argv[]){
 	    	while(argv[num] != NULL){//counts length of ars in argv
 		    num++;
 	        }
-		cout << "Num: " << num << endl;
+		//cout << "Num: " << num << endl;
 	        redirect(argv, num); //Calls check for i/o redirection
 		//Create new arr[] here?
 

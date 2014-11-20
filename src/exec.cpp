@@ -34,7 +34,6 @@ void redirect(char* argv[], int num, bool hasOp){//consider making a bool to che
 	while(argv[x][y] != '\0'){// char in argv[]
 	    if(argv[x][y] == '>'){//is Output
 		if(argv[x][y+1] == '>'){//Append
-		    //cout << "Append found!" << endl;
 		    flags = 1;
 		    hasOp = true;
 		}else{
@@ -56,36 +55,34 @@ void redirect(char* argv[], int num, bool hasOp){//consider making a bool to che
 	}//End of a string
 	x++;//iterate through strings
     }
-    //cout << "Flags before check: " << flags << endl;
     if(flags == 0){//Output
 	if(last == (x - 1)){//Ends with >
 	    cout << "error: expected argument for '>'" << endl; 
-	    //FIXME - Ensure exit goes back to prompt properly
 	    exit(0);
 	}else if(last == 0){//Symbol is first cmd
-	    //FIXME - need to fdo open then cout will overwrite output file
-	    cout << "";//Clears the output file
-	}else{
-	    //New char* [] goes here - FIXME FIXME FIXME
-	    cerr << "argv[x-1]: " << argv[x-1] << endl;
-	    cerr << "argv[x-2]: " << argv[x-2] << endl;
 	    int fdo = open(argv[x - 1], O_WRONLY);
 	    if(fdo == -1){
 		perror("open output");
-		exit(0);
-		//Go back to prompt
-	        //ensure execvp is NOT run on this
+		exit(1);
+	    }
+	    close(1);
+	    dup(fdo);
+	    cout << "";//FIXME - Should clear the output file
+	}else{
+	    int fdo = open(argv[x - 1], O_WRONLY);
+	    if(fdo == -1){
+		perror("open output2");
+		exit(1);
 	    }
 	    close(1);//close stdout
 	    dup(fdo); //fdo is now in slot 1(stdout)
-	    strcpy(argv[x-1], "\0");
-	    strcpy(argv[x-2], "\0");
+	    strcpy(argv[x-1], "\0"); //FIXME - may cause issues
+	    strcpy(argv[x-2], "\0"); //Handle if x-2 and x-1 don't exist?
 	}
     }
     if(flags != -1){//Recursive call
 	redirect(argv, last, hasOp);
     }
-    //cerr << "argv[x]: " << argv[x] << endl;
     return;
 
 }
@@ -141,11 +138,6 @@ int main(int argc, char* argv[]){
 		bool hasOp = false;
 	        redirect(argv, num, hasOp); //Calls check for i/o redirection
 
-		/*if(hasOp == true){//Confirm that real cmds don't get called twice
-		    //This should avoid children from running execvp multiple times
-		    exit(0);
-		}*/
-
 	        int pid3 = fork();
 	        if(pid3 == -1){
 		    perror("pid fork  failed");
@@ -162,7 +154,7 @@ int main(int argc, char* argv[]){
 		    perror("wait() failed");
 		    exit(1);
 	        }
-		exit(0);
+		exit(0); //Exits the child process
 	    //end pid2 process
 	    }else{//pid2 parent
 		if(-1 == wait(0)){

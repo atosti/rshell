@@ -23,7 +23,7 @@ void tokenize(char* arr[], char* token, string delims){
     return;
 }*/
 
-void redirect(char* argv[], int num){//consider making a bool to check if any operators are found
+void redirect(char* argv[], int num, bool hasOp){//consider making a bool to check if any operators are found
     int x = 0;
     int y = 0;
     int last = -1;//char loc. of last symbol
@@ -36,17 +36,21 @@ void redirect(char* argv[], int num){//consider making a bool to check if any op
 		if(argv[x][y+1] == '>'){//Append
 		    //cout << "Append found!" << endl;
 		    flags = 1;
+		    hasOp = true;
 		}else{
 		    //cout << "Output found!" << endl;
 		    last = x;
 		    flags = 0;
+		    hasOp = true;
 		}
 	    }else if(argv[x][y] == '<'){//is Input
 		//cout << "Input found!" << endl;
 		flags = 2;
+		hasOp = true;
 	    }else if(argv[x][y] == '|'){//is Pipe
 		//cout << "Pipe found!" << endl;
 		flags = 3;
+		hasOp = true;
 	    }
 	    y++;//iterate through chars
 	}//End of a string
@@ -62,6 +66,9 @@ void redirect(char* argv[], int num){//consider making a bool to check if any op
 	    //FIXME - need to fdo open then cout will overwrite output file
 	    cout << "";//Clears the output file
 	}else{
+	    //New char* [] goes here - FIXME FIXME FIXME
+	    cerr << "argv[x-1]: " << argv[x-1] << endl;
+	    cerr << "argv[x-2]: " << argv[x-2] << endl;
 	    int fdo = open(argv[x - 1], O_WRONLY);
 	    if(fdo == -1){
 		perror("open output");
@@ -71,13 +78,14 @@ void redirect(char* argv[], int num){//consider making a bool to check if any op
 	    }
 	    close(1);//close stdout
 	    dup(fdo); //fdo is now in slot 1(stdout)
+	    strcpy(argv[x-1], "\0");
+	    strcpy(argv[x-2], "\0");
 	}
     }
     if(flags != -1){//Recursive call
-	redirect(argv, last);
+	redirect(argv, last, hasOp);
     }
-    cerr << "argv[x]: " << argv[x] << endl;
-    execvp(argv[0], argv);
+    //cerr << "argv[x]: " << argv[x] << endl;
     return;
 
 }
@@ -124,11 +132,27 @@ int main(int argc, char* argv[]){
 		exit(1);
 	    }else if(pid2 == 0){//Child process 
 	        int num = 0;
+		cerr << "-----------" << endl;
 	    	while(argv[num] != NULL){//counts length of ars in argv
+		    cerr << "argv[" << num << "]: " << argv[num] << endl;
 		    num++;
 	        }
-		//cout << "Num: " << num << endl;
-	        redirect(argv, num); //Calls check for i/o redirection
+		cerr << "-----------" << endl;
+		bool hasOp = false;
+	        redirect(argv, num, hasOp); //Calls check for i/o redirection
+
+		//FIXME - do these next lines even get called?
+		cerr << "-----------" << endl;
+	    	while(argv[num] != NULL){//counts length of ars in argv
+		    cerr << "argv[" << num << "]: " << argv[num] << endl;
+		    num++;
+	        }
+		cerr << "-----------" << endl;
+
+		/*if(hasOp == true){//Confirm that real cmds don't get called twice
+		    //This should avoid children from running execvp multiple times
+		    exit(0);
+		}*/
 		//Create new arr[] here?
 
 	        int pid3 = fork();

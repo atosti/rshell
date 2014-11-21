@@ -9,21 +9,8 @@
 #include <fcntl.h>
 
 using namespace std;
-/* Broken - Fix later to help clean up code
-void tokenize(char* arr[], char* token, string delims){
-    unsigned cnt = 0;
-    while(token != NULL){
-	cout << "arr[" << cnt << "]: " << arr[cnt] << endl;
-	arr[cnt] = token;
-	token = strtok(NULL, delims);
-	cnt++;
-    }
-    strcat(arr[cnt - 1], "\0");
-    arr[cnt] = token;
-    return;
-}*/
 
-void redirect(char* argv[], int num){//consider making a bool to check if any operators are found
+void redirect(char* argv[], int num, bool &runExec){//consider making a bool to check if any operators are found
     int x = 0;
     int y = 0;
     int last = -1;//char loc. of last symbol
@@ -42,15 +29,22 @@ void redirect(char* argv[], int num){//consider making a bool to check if any op
 		    flags = 0;
 		}
 	    }else if(argv[x][y] == '<'){//Input
-		last = x;
-		flags = 2;
+		if((argv[x][y+1] == '<') &&
+		   (argv[x][y+2] == '<')){
+		    y+=2;
+		    last = x;
+		    flags = 4; //<<< found
+		}else{
+	  	    last = x;
+		    flags = 2;
+		}
 	    }else if(argv[x][y] == '|'){//Pipe
 		last = x;
 		flags = 3;
 	    }
-	    y++;//iterate through chars
+	    y++;//iterate chars
 	}//End of a string
-	x++;//iterate through strings
+	x++;//iterate strings
     }
     if(flags == 0 || flags == 1){//Output or Append
 	if(last == (x - 1)){//Ends with '>' or '>>'
@@ -177,9 +171,15 @@ void redirect(char* argv[], int num){//consider making a bool to check if any op
 	    }
 	}
 
-    }//End Pipe
+    }else if(flags == 4){
+	cout << argv[x-1] << endl;
+	for(unsigned i = 1; i < x; i++){
+	    argv[i] = argv[i+1];
+	}
+	runExec = false;
+    }
     if(flags != -1){//Recursive call
-	redirect(argv, last);
+	redirect(argv, last, runExec);
     }
     return;
 
@@ -227,22 +227,22 @@ int main(int argc, char* argv[]){
 		exit(1);
 	    }else if(pid2 == 0){//Child process 
 	        int num = 0;
-		cerr << "-----------" << endl;
+		bool runExec = true;
 	    	while(argv[num] != NULL){//counts length of ars in argv
-		    cerr << "argv[" << num << "]: " << argv[num] << endl;
 		    num++;
 	        }
-		cerr << "-----------" << endl;
-	        redirect(argv, num); //Calls check for i/o redirection
+	        redirect(argv, num, runExec); //Calls check for i/o redirection
 
-		int pid3 = 0;
-	        //int pid3 = fork();//FIXME - is 3rd fork needed?
+		//int pid3 = 0;
+	        int pid3 = fork();//FIXME - is 3rd fork needed?
 	        if(pid3 == -1){
 		    perror("pid fork  failed");
 		    exit(1);
 	        }
 	  	if(pid3 == 0){ //Child process
-	 	    if(execvp(argv[0], argv) == -1){//Runs on each argv[]
+		    if(!runExec){
+			exit(1);
+		    }else if(execvp(argv[0], argv) == -1){//Runs on each argv[]
 		    	perror("execvp() failed");
 		        exit(1);
 		    }

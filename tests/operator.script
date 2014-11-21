@@ -1,0 +1,42 @@
+Script started on Thu 20 Nov 2014 11:54:40 PM PST
+~
+atost001@hammer $ cs100
+[0;91m
+===============================================================================
+|                                                                             |
+| You have enabled settings specific for cs100.                               |
+|                                                                             |
+===============================================================================
+[0m
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~[0;95m [0;36m$[0m cd Documents/CS100/HW0/src
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~/Documents/CS100/HW0/src[0;95m (redirect) [0;36m$[0m ls
+;  a.out  cp.cpp  echo	exec.cpp  input.txt  ls.cpp  operator.script  output.txt  test	test.cpp  Timer.h
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~/Documents/CS100/HW0/src[0;95m (redirect) [0;36m$[0m ./[K[Kg++ exec.cpp
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~/Documents/CS100/HW0/src[0;95m (redirect) [0;36m$[0m ./a.out
+$ cat outputt .txt
+$ echo tets    st > output.txt
+$ cat output.txt
+test  
+$ echo "test" > output.txt
+$ cat output.txt
+"test"  
+$ out   cat < output.txt
+"test"  
+$ echo A > echo B   > echo C > output.txt
+open output: No such file or directory
+$ cat | output.txt | tr - A-Z a-z
+$ cat <<< Print just this string
+string
+$ cat <<< print me
+me
+$ cat <<< asdfasdf
+asdfasdf
+$ cat < exi   output.txt | tr A-Z a                           cat     exit    cat < output.txt                exit
+Exiting...
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~/Documents/CS100/HW0/src[0;95m (redirect) [0;36m$[0m exit
+exit
+~
+atost001@hammer $ exit
+exit
+
+Script done on Thu 20 Nov 2014 11:58:27 PM PST

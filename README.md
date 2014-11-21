@@ -2,7 +2,7 @@ Overview - main.cpp
 -----------------------
 The rshell project is designed to replicate the bash shell, allowing users to input various bash commands, such as "ls", "echo", and "pwd". Like in bash, commands and their arguments can be input into rshell with semicolons between them. Additionally, this program has an exit function(called with "exit") which allows a user to terminate an instance of rshell.
 
-Rshell now handles input and output operators ('>', '<').
+Rshell now handles input and output operators (>, <).
 
 Known errors
 -----------------------

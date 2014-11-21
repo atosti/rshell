@@ -32,22 +32,20 @@ void redirect(char* argv[], int num){//consider making a bool to check if any op
     while(x != num){//for each string
         y = 0;//Resets y to beginning of a string
 	while(argv[x][y] != '\0'){//char in argv[]
-	    if(argv[x][y] == '>'){//Output
-		if(argv[x][y+1] == '>'){//Append
-		    cerr << "Append found!" << endl;
+	    if(argv[x][y] == '>'){//Output check
+		if(argv[x][y+1] == '>'){//Append check
 		    flags = 1;
 		    last = x;
 		    y++; //used to avoid second > in >> being read as a solo >
 		}else{
-		    cerr << "Output found!" << endl;
 		    last = x;
 		    flags = 0;
 		}
-	    }else if(argv[x][y] == '<'){//is Input
-		cerr << "Input found!" << endl;
+	    }else if(argv[x][y] == '<'){//Input
+		last = x;
 		flags = 2;
-	    }else if(argv[x][y] == '|'){//is Pipe
-		cerr << "Pipe found!" << endl;
+	    }else if(argv[x][y] == '|'){//Pipe
+		last = x;
 		flags = 3;
 	    }
 	    y++;//iterate through chars
@@ -63,41 +61,123 @@ void redirect(char* argv[], int num){//consider making a bool to check if any op
 		cerr << "error: expected argument for >>" << endl;
 		exit(0);
 	    }
-	}else if((last == 0) && (flags == 0)){//'>' comes first
+	}else if(flags == 0){//Output
 	    int fdo = open(argv[x - 1], O_WRONLY);
 	    if(fdo == -1){
 		perror("open output");
 		exit(1);
 	    }
-	    close(1);
-	    dup(fdo);
-	    cout << "";//FIXME - Should clear the output file
-	}else if((last == 0) && (flags == 1)){ // '>>' comes first
-	    //Do nothing - Confirm it should do nothing
-	    //FIXME - can prolly just delete this
-	}else if(flags == 0){
-	    int fdo = open(argv[x - 1], O_WRONLY);
-	    if(fdo == -1){
-		perror("open output2");
+	    if(close(1) == -1){//close stdout
+		perror("close output");
 		exit(1);
 	    }
-	    close(1);//close stdout
-	    dup(fdo);//fdo is now in slot 1 (stdout)
-	    strcpy(argv[x-1], "\0"); //FIXME - may cause issues
-	    strcpy(argv[x-2], "\0"); //Handle if x-2 and x-1 don't exist?
-	}else if(flags == 1){
+	    if(dup2(fdo, STDOUT_FILENO) == -1){//fdo is now in slot 1 (stdout)
+		perror("dup output");
+		exit(1);
+	    }
+	    strcpy(argv[x-1], "\0"); //Removes file name
+	    strcpy(argv[x-2], "\0"); //Removes > operator
+				     //Handle if x-2 and x-1 don't exist?
+	    cout << ""; //Should clear the output file
+			//Above else if might not be needed if this is resolved
+	}else if(flags == 1){//Append
 	    int fdo = open(argv[x - 1], O_WRONLY | O_APPEND);
 	    if(fdo == -1){
 		perror("open append");
 		exit(1);
 	    }
-	    close(1);
-	    dup(fdo);
+	    if(close(1) == -1){
+		perror("close append");
+		exit(1);
+	    }
+	    if(dup(fdo) == -1){
+		perror("dup append");
+		exit(1);
+	    }
 	    strcpy(argv[x-1], "\0");
 	    strcpy(argv[x-2], "\0");
 	}
-    }
-    //} //FIXME - Ensure this was just misplaced from before
+    }else if(flags == 2){//Input
+	int fdi = open(argv[x - 1], O_RDONLY);
+	if(fdi == -1){
+	    perror("open input");
+	    exit(1);
+	}
+	if(close(0) == -1){//close stdin
+	    perror("close input");
+	    exit(1);
+	}
+	if(dup2(fdi, STDIN_FILENO) == -1){//fdi is now in slot 0 (stdin)
+	    perror("dup input");
+	    exit(1);
+	}
+	for(unsigned i = 1; i < x; i++){
+	    argv[i] = argv[i+1];
+	}
+	//FIXME - old lines below, ensure above works before deletion
+	//argv[x-2] = argv[x-1]; //Does this need to be put into a for
+	//argv[x-1] = argv[x]; //loop to keep pushing all the next
+			    //commands together?
+    }else if(flags == 3){//Pipe
+	int fdpc[2];//fd's for parent to child
+	int fdcp[2];//fd's for child to parent
+
+	if(pipe(fdpc) == -1){//Open pipe
+	    perror("pipe fdpc");
+	    exit(1);
+	}
+	if(pipe(fdcp) == -1){//Open pipe
+	    perror("pipe fdcp");
+	    exit(1);
+	}
+
+	int pid = 0;
+	//int pid = fork();
+	if(pid == -1){
+	    perror("pipe fork");
+	    exit(1);
+	}else if(pid == 0){//In child process
+	    //Connects fdpc to stdin
+	    if(close(fdpc[1]) == -1){
+		perror("close fdpc[1]");
+		exit(1);
+	    }
+	    if(dup2(fdpc[0], STDIN_FILENO) == -1){
+		perror("dup2 fdpc[0]");
+		exit(1);
+	    }
+	    if(close(fdpc[0]) == -1){
+		perror("close fdpc[0]");
+		exit(1);
+	    }
+
+	    //Conects fdcp to stdout
+	    if(close(fdcp[0]) == -1){
+		perror("close fdcp[0]");
+		exit(1);
+	    }
+	    if(dup2(fdcp[1], STDOUT_FILENO) == -1){
+		perror("dup2 fdcp[1]");
+		exit(1);
+	    }
+	    if(close(fdcp[1]) == -1){
+		perror("close fdcp[1]");
+		exit(1);
+	    }
+	    exit(1);
+	}else{//Parent process
+	    //Close unneeeded pipes
+	    if(close(fdpc[0]) == -1){
+		perror("close fdpc[0]");
+		exit(1);
+	    }
+	    if(close(fdcp[1]) == -1){
+		perror("close fdcp[1]");
+		exit(1);
+	    }
+	}
+
+    }//End Pipe
     if(flags != -1){//Recursive call
 	redirect(argv, last);
     }
@@ -155,7 +235,8 @@ int main(int argc, char* argv[]){
 		cerr << "-----------" << endl;
 	        redirect(argv, num); //Calls check for i/o redirection
 
-	        int pid3 = fork();
+		int pid3 = 0;
+	        //int pid3 = fork();//FIXME - is 3rd fork needed?
 	        if(pid3 == -1){
 		    perror("pid fork  failed");
 		    exit(1);
@@ -166,8 +247,8 @@ int main(int argc, char* argv[]){
 		        exit(1);
 		    }
 	    	}
-	   	 //Parent function
-	   	 if(-1 == wait(0)){ //waits on children - execs in order
+	   	//Parent function
+	   	if(-1 == wait(0)){ //waits on children - execs in order
 		    perror("wait() failed");
 		    exit(1);
 	        }

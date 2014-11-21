@@ -6,7 +6,7 @@ Rshell now handles input and output operators ('>', '<').
 
 Known errors
 -----------------------
-Currently, it does not allow for the use of connectors such as "||" and "&&", nor does it allow for comments (#).
+- Currently, it does not allow for the use of connectors such as "||" and "&&", nor does it allow for comments (#).
 
 ls.cpp
 -----------------------

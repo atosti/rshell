@@ -56,7 +56,11 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 		exit(0);
 	    }
 	}else if(flags == 0){//Output
-	    int fdo = open(argv[x - 1], O_WRONLY);
+	    //if(remove(argv[x - 1]) != 0){
+		//perror("remove output");
+	    //}
+	    //FIXME - clear output of the file
+	    int fdo = open(argv[x - 1], O_WRONLY | O_CREAT);
 	    if(fdo == -1){
 		perror("open output");
 		exit(1);
@@ -71,9 +75,6 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 	    }
 	    strcpy(argv[x-1], "\0"); //Removes file name
 	    strcpy(argv[x-2], "\0"); //Removes > operator
-				     //Handle if x-2 and x-1 don't exist?
-	    cout << ""; //Should clear the output file
-			//Above else if might not be needed if this is resolved
 	}else if(flags == 1){//Append
 	    int fdo = open(argv[x - 1], O_WRONLY | O_APPEND);
 	    if(fdo == -1){
@@ -108,13 +109,9 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 	for(unsigned i = 1; i < x; i++){
 	    argv[i] = argv[i+1];
 	}
-	//FIXME - old lines below, ensure above works before deletion
-	//argv[x-2] = argv[x-1]; //Does this need to be put into a for
-	//argv[x-1] = argv[x]; //loop to keep pushing all the next
-			    //commands together?
     }else if(flags == 3){//Pipe
-	int fdpc[2];//fd's for parent to child
-	int fdcp[2];//fd's for child to parent
+	int fdpc[2];//fds for parent to child
+	int fdcp[2];//fds for child to parent
 
 	if(pipe(fdpc) == -1){//Open pipe
 	    perror("pipe fdpc");
@@ -125,8 +122,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 	    exit(1);
 	}
 
-	int pid = 0;
-	//int pid = fork();
+	int pid = fork();
 	if(pid == -1){
 	    perror("pipe fork");
 	    exit(1);
@@ -145,7 +141,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 		exit(1);
 	    }
 
-	    //Conects fdcp to stdout
+	    //Connects fdcp to stdout
 	    if(close(fdcp[0]) == -1){
 		perror("close fdcp[0]");
 		exit(1);
@@ -158,9 +154,21 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 		perror("close fdcp[1]");
 		exit(1);
 	    }
-	    exit(1);
+	    //Execs first command
+	    char *buf[x];
+	    for(unsigned i = 0; i < last; i++){
+		//cerr << "argv[" << i << "]: " << argv[i] << endl;
+		strcpy(buf[i], argv[i]);
+	    }
+
+	    if(execvp(buf[0], argv) == -1){
+		perror("execvp pipe");
+		exit(1);
+	    }
+	
+	    //exit(1); //FIXME - needed?
 	}else{//Parent process
-	    //Close unneeeded pipes
+	    //Close unneeded pipes
 	    if(close(fdpc[0]) == -1){
 		perror("close fdpc[0]");
 		exit(1);
@@ -169,9 +177,60 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 		perror("close fdcp[1]");
 		exit(1);
 	    }
+
+	    //Execs second command
+	    char *buf[x];
+	    for(unsigned i = 0; i < (x - last); i++){
+		//cerr << "argv[" << i << "]: " << argv[i] << endl;
+		strcpy(buf[i], argv[i]);
+	    }
+
+	    if(execvp(buf[0], argv) == -1){
+		perror("execvp pipe");
+		exit(1);
+	    }
+
+	    //Open pipes
+	    /*
+	    if(execvp(argv[last+1], argv) == -1){
+		perror("execvp pipe");
+		exit(1);
+	    }*/
+
+	    //Create temp file, write execvp of last +1 to it, then
+	    //open that file in fdpc[1]
+
+	    if(fdpc[1] = open(argv[last + 1], O_WRONLY) == -1){
+		perror("fdpc[1] open");
+		exit(1);
+	    }
+	    /*if(fdcp[0] = open(argv[last - 1], O_RDONLY) == -1){
+		perror("fdcp[0] open");
+		exit(1);
+	    }*/
+
+	    //redirect input to child
+	    if(close(fdpc[1]) == -1){ //close out
+		perror("close fdpc[1]");
+		exit(1);
+	    }
+	    //read child process output
+	    if(read(fdcp[0], buf, sizeof(buf)) == -1){ //read in
+		perror("read fdcp[0]");
+		exit(1);
+	    }
+	    if(close(fdcp[0]) == -1){
+		perror("close fdcp[0]");
+		exit(1);
+	    }
+	    //call wait on exited child
+	    if(wait(0) == -1){
+		perror("wait pipe");
+		exit(1);
+	    }
 	}
 
-    }else if(flags == 4){
+    }else if(flags == 4){//<<< string
 	cout << argv[x-1] << endl;
 	for(unsigned i = 1; i < x; i++){
 	    argv[i] = argv[i+1];

@@ -60,7 +60,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 		//perror("remove output");
 	    //}
 	    //FIXME - clear output of the file
-	    int fdo = open(argv[x - 1], O_WRONLY | O_CREAT);
+	    int fdo = open(argv[x - 1], O_WRONLY);
 	    if(fdo == -1){
 		perror("open output");
 		exit(1);

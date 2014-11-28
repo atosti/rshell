@@ -284,12 +284,39 @@ int main(int argc, char* argv[]){
 	    }
 	    argv[curr] = token; //Null term argv
 
+	    for(unsigned j = 0; argv[j] != NULL; j++){
+		for(unsigned k = 0; argv[j][k] != '\0'; k++){
+		    if(argv[j][k] == '#'){
+			//Everything after comment is ignored
+			while(argv[j] != NULL){
+			    while(argv[j][k] != '\0'){
+			    	argv[j][k] = '\0';
+			        k++;
+			    }
+			    j++;
+			}
+			k--;
+			j--;
+			cout << "End comment while" << endl;
+		    }else if((argv[j][k] == '&') &&
+			    (argv[j][k+1] == '&')){
+			cout << "And found!" << endl;
+		    }else if((argv[j][k] == '|') &&
+			    (argv[j][k+1] == '|')){
+			cout << "Or found!" << endl;
+		    }
+		    cout << "test" << endl;
+		}
+		cout << "exited k loop" << endl;
+	    }
+	    cout << "exited j loop" << endl;
+
 	    //Forks before redirect()
-	    int pid2 = fork();
-	    if(pid2 == -1){
-		perror("pid2 failed");
+	    int pid = fork();
+	    if(pid == -1){
+		perror("pid failed");
 		exit(1);
-	    }else if(pid2 == 0){//Child process 
+	    }else if(pid == 0){//Child process 
 	        int num = 0;
 		bool runExec = true;
 		//Counts # of args in argv
@@ -298,13 +325,13 @@ int main(int argc, char* argv[]){
 	        }
 	        redirect(argv, num, runExec); //i/o redirection
 
-		//Next fork
-	        int pid3 = fork();//FIXME - is 3rd fork needed?
-	        if(pid3 == -1){
+		//Second fork - is it needed? FIXME
+	        int pid2 = fork();
+	        if(pid2 == -1){
 		    perror("pid fork  failed");
 		    exit(1);
 	        }
-	  	if(pid3 == 0){ //Child process
+	  	if(pid2 == 0){ //Child process
 		    if(!runExec){
 			exit(1);
 		    }else if(execvp(argv[0], argv) == -1){//Runs on each argv[]
@@ -318,8 +345,8 @@ int main(int argc, char* argv[]){
 		    exit(1);
 	        }
 		exit(0); //Exits the child process
-	    //end pid2 process
-	    }else{//pid2 parent
+	    //end pid process
+	    }else{//pid parent
 		if(-1 == wait(0)){
 		    perror("wait() failed");
 		    exit(1);

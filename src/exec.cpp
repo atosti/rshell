@@ -247,14 +247,17 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 int main(int argc, char* argv[]){
     string usrInput; //Holds user input
     while(1){
-	unsigned cnt = 0; //counter for slots in argv[]
         cout << "$ "; //Prints prompt
 	getline(cin, usrInput);
-	char* inputCpy = new char[usrInput.length() + 1]; //pointer for input str
-	strcpy(inputCpy, usrInput.c_str()); //inputCpy holds c-str copy of input
-	char* token = strtok(inputCpy, ";"); //removes semicolons
-	char* a[usrInput.length() + 1]; //Creates array for cmds + args
-	while(token != NULL){ //Tokenizes semicolons
+
+	unsigned cnt = 0; //Slots in argv[]
+	char input[usrInput.length() + 1];
+	strcpy(input, usrInput.c_str());
+	char* token = strtok(input, ";");
+	char* a[usrInput.length() + 1]; //Arr for cmds + args
+
+	//Tokenizes semicolons
+	while(token != NULL){
 	    a[cnt] = token;
 	    token = strtok(NULL, ";");
 	    cnt++;
@@ -267,32 +270,35 @@ int main(int argc, char* argv[]){
 	for(int i = 0; i < cnt; i++){//Tokenizes a[] removing " "
 	    token = strtok(a[i], " "); //Resets token
 	    curr = 0;
-	    while(token != NULL){ //Remove spaces
-	        argv[curr] = token; //argv[] = a[] (without spaces)	  
+
+	    //Removes spaces and tabs, places result in argv[]
+	    while(token != NULL){
+	        argv[curr] = token;	  
 		if(strcmp(argv[curr], "exit") == 0){//Exit check
 		    cout << "Exiting..." << endl;
-		    delete inputCpy;
 		    exit(0);
 		}
-		
-		strcat(argv[curr], "\0"); //Null terms
-		token = strtok(NULL, " ");
+		strcat(argv[curr], "\0");
+		token = strtok(NULL, " \t");
 		curr++; 
 	    }
-	    argv[curr] = token; //Null terms array
-	    int pid2 = fork(); //Forks before redirect()
+	    argv[curr] = token; //Null term argv
+
+	    //Forks before redirect()
+	    int pid2 = fork();
 	    if(pid2 == -1){
 		perror("pid2 failed");
 		exit(1);
 	    }else if(pid2 == 0){//Child process 
 	        int num = 0;
 		bool runExec = true;
-	    	while(argv[num] != NULL){//counts length of ars in argv
+		//Counts # of args in argv
+	    	while(argv[num] != NULL){
 		    num++;
 	        }
-	        redirect(argv, num, runExec); //Calls check for i/o redirection
+	        redirect(argv, num, runExec); //i/o redirection
 
-		//int pid3 = 0;
+		//Next fork
 	        int pid3 = fork();//FIXME - is 3rd fork needed?
 	        if(pid3 == -1){
 		    perror("pid fork  failed");
@@ -320,8 +326,7 @@ int main(int argc, char* argv[]){
 		}
 	    }
 	}
-        delete inputCpy; //Deallocates memory - Fixme, might go elsewhere
-    }//End while loop
+    }//End infinite while
 
     return 0;
 }

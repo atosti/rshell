@@ -60,7 +60,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 		//perror("remove output");
 	    //}
 	    //FIXME - clear output of the file
-	    int fdo = open(argv[x - 1], O_WRONLY);
+	    int fdo = open(argv[x - 1], O_WRONLY | O_CREAT);
 	    if(fdo == -1){
 		perror("open output");
 		exit(1);
@@ -247,58 +247,160 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 int main(int argc, char* argv[]){
     string usrInput; //Holds user input
     while(1){
-	unsigned cnt = 0; //counter for slots in argv[]
-        cout << "$ "; //Prints prompt
-	getline(cin, usrInput);
-	char* inputCpy = new char[usrInput.length() + 1]; //pointer for input str
-	strcpy(inputCpy, usrInput.c_str()); //inputCpy holds c-str copy of input
-	char* token = strtok(inputCpy, ";"); //removes semicolons
-	char* a[usrInput.length() + 1]; //Creates array for cmds + args
-	while(token != NULL){ //Tokenizes semicolons
-	    a[cnt] = token;
-	    token = strtok(NULL, ";");
-	    cnt++;
+	//Prints login/hostname prompt
+	char *login;
+	if((login = getlogin()) == NULL){
+	    perror("getlogin failed");
+	    exit(1);
 	}
-	strcat(a[cnt - 1], "\0");
-	a[cnt] = token; //Null terminates a[]
+	for(unsigned i = 0; login[i] != '\0'; i++){
+	    cout << login[i];
+	}
+	cout << "@";
+	if(gethostname(login, 128) == -1){ //Should hostname be smaller?
+	    perror("gethostname failed");
+	    exit(1);
+	}
+	for(unsigned i = 0; login[i] != '\0'; i++){
+	    cout << login[i];
+	}
+        cout << "$ ";
+
+	//Handles input
+	getline(cin, usrInput);
+	unsigned cnt = 0; //Slots in argv[]
+	char input[usrInput.length() + 1];
+	strcpy(input, usrInput.c_str());
+
+	//Comment handling and Operator checking
+	bool semiOp = false;
+	bool andOp = false;
+	bool orOp = false;
+	for(unsigned i = 0; input[i] != '\0'; i++){
+	    if(input[i] == '#'){
+		while(input[i] != '\0'){
+		    input[i] = '\0';
+		    i++;
+		}
+	    }else if(input[i] == ';'){
+		semiOp = true;
+	    }else if((input[i] == '&') && (input[i+1] == '&')){
+		andOp = true;
+	    }else if((input[i] == '|') && (input[i+1] == '|')){
+		orOp = true;
+	    }
+	}
+
+	//Error checking for mult. ops
+	if(semiOp && andOp){
+	    cout << "Error mixed operators && ;" << endl;
+	    continue;
+
+	}else if(semiOp && orOp){
+	    cout << "Error mixed operators ; ||" << endl;
+	    continue;
+
+	}else if(andOp && orOp){
+	    cout << "Error mixed operators && ||" << endl;
+	    continue;
+	}
+
+	//Beginning of Tokenization
+	char *a[usrInput.length() + 1]; //array for cmds + args
+	char *token;
+	bool valid = true; //Validity of execvp()
+
+	//Tokenizes Semicolons(;) and no Operators
+	if((semiOp) || (!semiOp && !andOp && !orOp)){
+	    token = strtok(input, ";");
+	    while(token != NULL){
+	    	a[cnt] = token;
+	    	token = strtok(NULL, ";");
+	    	cnt++;
+	    }
+	    strcat(a[cnt - 1], "\0");
+	    a[cnt] = token; //Null terminates a[]
+	//Tokenizes And operator(&&)
+	}else if(andOp){
+	    token = strtok(input, "&");
+	    while(token != NULL){
+		a[cnt] = token;
+		token = strtok(NULL, "&");
+		cnt++;
+	    }
+    	    strcat(a[cnt - 1], "\0");
+	    a[cnt] = token; //Null terminates a[]
+
+	//Tokenizes Or operator(||)
+	}else if(orOp){
+	    token = strtok(input, "|");
+	    while(token != NULL){
+		a[cnt] = token;
+		token = strtok(NULL, "|");
+		cnt++;
+	    }
+	    strcat(a[cnt - 1], "\0");
+	    a[cnt] = token; //Null terminates a[]
+	    valid = false; //Starting state for or
+	}
 
 	//Fork for each command (separated by semicolons)
 	int curr = 0;
 	for(int i = 0; i < cnt; i++){//Tokenizes a[] removing " "
 	    token = strtok(a[i], " "); //Resets token
 	    curr = 0;
-	    while(token != NULL){ //Remove spaces
-	        argv[curr] = token; //argv[] = a[] (without spaces)	  
+
+	    //Removes spaces and tabs, places result in argv[]
+	    while(token != NULL){
+	        argv[curr] = token;	  
 		if(strcmp(argv[curr], "exit") == 0){//Exit check
 		    cout << "Exiting..." << endl;
-		    delete inputCpy;
 		    exit(0);
 		}
-		
-		strcat(argv[curr], "\0"); //Null terms
-		token = strtok(NULL, " ");
+		strcat(argv[curr], "\0");
+		token = strtok(NULL, " \t");
 		curr++; 
 	    }
-	    argv[curr] = token; //Null terms array
-	    int pid2 = fork(); //Forks before redirect()
-	    if(pid2 == -1){
-		perror("pid2 failed");
+	    argv[curr] = token; //Null term argv
+
+	    //Connector Handling
+	    if(andOp){
+		if(!valid){
+		    continue;
+		}
+	    }else if(orOp){
+		if(valid){
+		    continue;
+		}
+	    }
+	    //assign true and false to either side of connectors
+	    //If prev succeeds, do AND 
+	    //If prev fails, do OR
+
+	    //Forks before redirect()
+	    int ret = 0;
+	    int pid = fork();
+	    if(pid == -1){
+		perror("pid failed");
 		exit(1);
-	    }else if(pid2 == 0){//Child process 
+	    }else if(pid == 0){//Child process 
 	        int num = 0;
 		bool runExec = true;
-	    	while(argv[num] != NULL){//counts length of ars in argv
+
+		//Counts # of args in argv
+	    	while(argv[num] != NULL){
 		    num++;
 	        }
-	        redirect(argv, num, runExec); //Calls check for i/o redirection
+	        redirect(argv, num, runExec); //i/o redirection
 
-		//int pid3 = 0;
-	        int pid3 = fork();//FIXME - is 3rd fork needed?
-	        if(pid3 == -1){
-		    perror("pid fork  failed");
+		//Second fork
+	        int pid2 = fork();
+	        if(pid2 == -1){
+		    perror("pid fork failed");
 		    exit(1);
 	        }
-	  	if(pid3 == 0){ //Child process
+		//Child process
+	  	if(pid2 == 0){
 		    if(!runExec){
 			exit(1);
 		    }else if(execvp(argv[0], argv) == -1){//Runs on each argv[]
@@ -307,21 +409,27 @@ int main(int argc, char* argv[]){
 		    }
 	    	}
 	   	//Parent function
-	   	if(-1 == wait(0)){ //waits on children - execs in order
+	   	if(-1 == waitpid(pid2, &ret,0)){ //waits on child-execs in order
 		    perror("wait() failed");
 		    exit(1);
-	        }
+	        }else if(WIFEXITED(ret) && WEXITSTATUS(ret) != 0){
+		    return -1;
+		}
 		exit(0); //Exits the child process
-	    //end pid2 process
-	    }else{//pid2 parent
-		if(-1 == wait(0)){
+	        //End Pid2 process
+	    //Pid parent
+	    }else{
+		if(-1 == waitpid(pid, &ret, 0)){
 		    perror("wait() failed");
 		    exit(1);
+		}else if(WIFEXITED(ret) && WEXITSTATUS(ret) != 0){
+		    valid = false;
+		}else{
+		    valid = true;
 		}
 	    }
 	}
-        delete inputCpy; //Deallocates memory - Fixme, might go elsewhere
-    }//End while loop
+    }//End infinite while
 
     return 0;
 }

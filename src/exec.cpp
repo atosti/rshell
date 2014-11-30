@@ -60,7 +60,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 		//perror("remove output");
 	    //}
 	    //FIXME - clear output of the file
-	    int fdo = open(argv[x - 1], O_WRONLY);
+	    int fdo = open(argv[x - 1], O_WRONLY | O_CREAT);
 	    if(fdo == -1){
 		perror("open output");
 		exit(1);
@@ -247,7 +247,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 int main(int argc, char* argv[]){
     string usrInput; //Holds user input
     while(1){
-	//Prints login and hostname
+	//Prints login/hostname prompt
 	char *login;
 	if((login = getlogin()) == NULL){
 	    perror("getlogin failed");
@@ -257,18 +257,17 @@ int main(int argc, char* argv[]){
 	    cout << login[i];
 	}
 	cout << "@";
-	//FIXME - is static name, should it be smaller?
-	if(gethostname(login, 128) == -1){
+	if(gethostname(login, 128) == -1){ //Should hostname be smaller?
 	    perror("gethostname failed");
 	    exit(1);
 	}
 	for(unsigned i = 0; login[i] != '\0'; i++){
 	    cout << login[i];
 	}
-        cout << "$ "; //Prints prompt
-	getline(cin, usrInput);
+        cout << "$ ";
 
 	//Handles input
+	getline(cin, usrInput);
 	unsigned cnt = 0; //Slots in argv[]
 	char input[usrInput.length() + 1];
 	strcpy(input, usrInput.c_str());

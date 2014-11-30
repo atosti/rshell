@@ -258,7 +258,7 @@ int main(int argc, char* argv[]){
 	}
 	cout << "@";
 	//FIXME - is static name, should it be smaller?
-	if(gethostname(login, 80) == -1){
+	if(gethostname(login, 128) == -1){
 	    perror("gethostname failed");
 	    exit(1);
 	}

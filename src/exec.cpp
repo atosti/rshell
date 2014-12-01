@@ -7,6 +7,7 @@
 #include <string.h>
 #include <cstring>
 #include <fcntl.h>
+#include <signal.h>
 
 using namespace std;
 
@@ -244,7 +245,26 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 
 }
 
+int pid = 0;
+int pid2 = 0;
+int pidParent = 0;
+
+//Signal Handler
+void sig(int signum){
+    //^C handling 
+    if(signum == SIGINT){
+	if(getpid() != pidParent){
+	    kill(getpid(), SIGKILL);
+	    //kill(pid2, SIGKILL);
+	    //kill(pid, SIGKILL);
+	}
+    }
+
+}
+
 int main(int argc, char* argv[]){
+    signal(SIGINT, sig);
+    pidParent = getpid();
     string usrInput; //Holds user input
     while(1){
 	//Prints login/hostname prompt
@@ -330,7 +350,6 @@ int main(int argc, char* argv[]){
 	    }
     	    strcat(a[cnt - 1], "\0");
 	    a[cnt] = token; //Null terminates a[]
-
 	//Tokenizes Or operator(||)
 	}else if(orOp){
 	    token = strtok(input, "|");
@@ -373,20 +392,16 @@ int main(int argc, char* argv[]){
 		    continue;
 		}
 	    }
-	    //assign true and false to either side of connectors
-	    //If prev succeeds, do AND 
-	    //If prev fails, do OR
 
 	    //Forks before redirect()
 	    int ret = 0;
-	    int pid = fork();
+	    pid = fork();
 	    if(pid == -1){
 		perror("pid failed");
 		exit(1);
 	    }else if(pid == 0){//Child process 
 	        int num = 0;
 		bool runExec = true;
-
 		//Counts # of args in argv
 	    	while(argv[num] != NULL){
 		    num++;
@@ -394,7 +409,7 @@ int main(int argc, char* argv[]){
 	        redirect(argv, num, runExec); //i/o redirection
 
 		//Second fork
-	        int pid2 = fork();
+	        pid2 = fork();
 	        if(pid2 == -1){
 		    perror("pid fork failed");
 		    exit(1);
@@ -415,8 +430,7 @@ int main(int argc, char* argv[]){
 	        }else if(WIFEXITED(ret) && WEXITSTATUS(ret) != 0){
 		    return -1;
 		}
-		exit(0); //Exits the child process
-	        //End Pid2 process
+		exit(0); //Exits child(end pid2)
 	    //Pid parent
 	    }else{
 		if(-1 == waitpid(pid, &ret, 0)){

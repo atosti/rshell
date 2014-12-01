@@ -15,16 +15,17 @@ void quit(){
     cout << "Exiting..." << endl;
     exit(0);
 }
+/*
 void cd(){
+    //If no params passed, change to HOME
+    if(chdir(getenv("HOME")) == -1){
+	perror("chdir failed");
+	exit(1);
+    }
     char buf[BUFSIZ];
-    
-cout << "HOME: " << getenv("HOME") << endl;
-	cout << "CWD: " << getcwd(buf, sizeof(buf)) << endl;
-	cout << "Buf: " << buf << endl;
-	chdir(getenv("HOME"));
-	cout << "CWD(2nd): " << getcwd(buf, sizeof(buf)) << endl;
-	cout << "Buf(2nd): " << buf << endl;
+    cout << "CWD: " << getcwd(buf, sizeof(buf)) << endl;
 }
+*/
 
 void redirect(char* argv[], int num, bool &runExec){//consider making a bool to check if any operators are found
     int x = 0;
@@ -281,13 +282,16 @@ int main(int argc, char* argv[]){
     pidParent = getpid();
     string usrInput; //Holds user input
 
+    chdir("./");
+
     //Creates a map for non-exec commands
     map<string, void (*)()> commands;
     commands["exit"] = quit;
-    commands["cd"] = cd;
+    //commands["cd"] = cd;
 
     while(1){
 	//Prints login/hostname prompt
+	char buf[BUFSIZ];
 	char *login;
 	if((login = getlogin()) == NULL){
 	    perror("getlogin failed");
@@ -304,7 +308,9 @@ int main(int argc, char* argv[]){
 	for(unsigned i = 0; login[i] != '\0'; i++){
 	    cout << login[i];
 	}
-        cout << "$ ";
+	//FIXME - Ensure this is proper output
+	//Note: getcwd() causes "still reachable" mem leaks
+	cout << ":" << getcwd(buf, sizeof(buf)) << " $ ";
 
 	//Handles input
 	getline(cin, usrInput);
@@ -386,6 +392,7 @@ int main(int argc, char* argv[]){
 	//Fork for each command (separated by semicolons)
 	int curr = 0;
 	bool isCmd = false;
+	bool isCd = false;
 	for(int i = 0; i < cnt; i++){//Tokenizes a[] removing " "
 	    token = strtok(a[i], " ");
 	    curr = 0;
@@ -395,9 +402,13 @@ int main(int argc, char* argv[]){
 	        argv[curr] = token;
 
 		//Checks for custom commands
-		if(commands.find(argv[curr]) != commands.end()){
+		if(commands.find(argv[0]) != commands.end()){
 		    commands.at(argv[curr])();
 		    isCmd = true;
+		}
+		//Cd check
+		if(strcmp(argv[0], "cd") == 0){
+		   isCd = true;
 		}
 		strcat(argv[curr], "\0");
 		token = strtok(NULL, " \t");
@@ -405,8 +416,32 @@ int main(int argc, char* argv[]){
 	    }
 	    argv[curr] = token; //Null term argv
 
+	    //Cd handler
+	    //FIXME - Test with test cases!
+	    if(isCd){
+		//If no path passed, change to HOME dir
+		if(curr == 1){
+    		    if(chdir(getenv("HOME")) == -1){
+			cout << "No such file or directory" << endl;
+		    }
+		//If it begins with a / or ./ proceed
+		}else if((argv[1][0] == '/') || (argv[1][0] == '.' && argv[1][1] == '/')){
+		   if(chdir(argv[1]) == -1){
+			cout << "No such file or directory" << endl;
+		    }
+		//If it needs to be appended with ./
+		}else{
+		    string path = "./";
+		    path.append(argv[1]);
+		    if(chdir(argv[1]) == -1){
+			cout << "No such file or directory" << endl;
+		    }
+		}
+		//Note: cd doesn't care about more than 1 arg being passed
+	    }
+
 	    //Prevents execvp from running on commands
-	    if(isCmd){
+	    if(isCmd || isCd){
 		continue;
 	    }
 	    //Connector Handling

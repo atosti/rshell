@@ -8,8 +8,23 @@
 #include <cstring>
 #include <fcntl.h>
 #include <signal.h>
-
+#include <map>
 using namespace std;
+
+void quit(){
+    cout << "Exiting..." << endl;
+    exit(0);
+}
+void cd(){
+    char buf[BUFSIZ];
+    
+cout << "HOME: " << getenv("HOME") << endl;
+	cout << "CWD: " << getcwd(buf, sizeof(buf)) << endl;
+	cout << "Buf: " << buf << endl;
+	chdir(getenv("HOME"));
+	cout << "CWD(2nd): " << getcwd(buf, sizeof(buf)) << endl;
+	cout << "Buf(2nd): " << buf << endl;
+}
 
 void redirect(char* argv[], int num, bool &runExec){//consider making a bool to check if any operators are found
     int x = 0;
@@ -245,6 +260,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 
 }
 
+//Globals for use in sig handler
 int pid = 0;
 int pid2 = 0;
 int pidParent = 0;
@@ -252,20 +268,24 @@ int pidParent = 0;
 //Signal Handler
 void sig(int signum){
     //^C handling 
+    //FIXME - Find test cases for ^C
     if(signum == SIGINT){
 	if(getpid() != pidParent){
 	    kill(getpid(), SIGKILL);
-	    //kill(pid2, SIGKILL);
-	    //kill(pid, SIGKILL);
 	}
     }
-
 }
 
 int main(int argc, char* argv[]){
     signal(SIGINT, sig);
     pidParent = getpid();
     string usrInput; //Holds user input
+
+    //Creates a map for non-exec commands
+    map<string, void (*)()> commands;
+    commands["exit"] = quit;
+    commands["cd"] = cd;
+
     while(1){
 	//Prints login/hostname prompt
 	char *login;
@@ -365,16 +385,19 @@ int main(int argc, char* argv[]){
 
 	//Fork for each command (separated by semicolons)
 	int curr = 0;
+	bool isCmd = false;
 	for(int i = 0; i < cnt; i++){//Tokenizes a[] removing " "
-	    token = strtok(a[i], " "); //Resets token
+	    token = strtok(a[i], " ");
 	    curr = 0;
 
 	    //Removes spaces and tabs, places result in argv[]
 	    while(token != NULL){
-	        argv[curr] = token;	  
-		if(strcmp(argv[curr], "exit") == 0){//Exit check
-		    cout << "Exiting..." << endl;
-		    exit(0);
+	        argv[curr] = token;
+
+		//Checks for custom commands
+		if(commands.find(argv[curr]) != commands.end()){
+		    commands.at(argv[curr])();
+		    isCmd = true;
 		}
 		strcat(argv[curr], "\0");
 		token = strtok(NULL, " \t");
@@ -382,6 +405,10 @@ int main(int argc, char* argv[]){
 	    }
 	    argv[curr] = token; //Null term argv
 
+	    //Prevents execvp from running on commands
+	    if(isCmd){
+		continue;
+	    }
 	    //Connector Handling
 	    if(andOp){
 		if(!valid){

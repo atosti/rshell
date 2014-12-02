@@ -396,6 +396,8 @@ int main(int argc, char* argv[]){
 	for(int i = 0; i < cnt; i++){//Tokenizes a[] removing " "
 	    token = strtok(a[i], " ");
 	    curr = 0;
+	    isCmd = false;
+	    isCd = false;
 
 	    //Removes spaces and tabs, places result in argv[]
 	    while(token != NULL){
@@ -419,22 +421,21 @@ int main(int argc, char* argv[]){
 	    //Cd handler
 	    //FIXME - Test with test cases!
 	    if(isCd){
-		//If no path passed, change to HOME dir
+		//If no path passed, print an error message
+		//Note: Bash changes it to HOME dir
 		if(curr == 1){
-    		    if(chdir(getenv("HOME")) == -1){
-			cout << "No such file or directory" << endl;
-		    }
+		    cout << "Error: No argument passed to cd" << endl;
 		//If it begins with a / or ./ proceed
 		}else if((argv[1][0] == '/') || (argv[1][0] == '.' && argv[1][1] == '/')){
 		   if(chdir(argv[1]) == -1){
-			cout << "No such file or directory" << endl;
+			perror("cd failed");
 		    }
 		//If it needs to be appended with ./
 		}else{
 		    string path = "./";
 		    path.append(argv[1]);
 		    if(chdir(argv[1]) == -1){
-			cout << "No such file or directory" << endl;
+			perror("cd failed");
 		    }
 		}
 		//Note: cd doesn't care about more than 1 arg being passed

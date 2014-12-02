@@ -22,10 +22,9 @@ using namespace std;
 
 //TODO:
 //Format the output left to right in columns
-//Sort output alphabetically where capitals don't matter
+//Sort output alphabetically case insensitive
 //Allow multiple files to be input and then output them properly
 //    this means mult. separate files, not a path of numerous files
-//If passed in file doesn't exist, print error
 
 //Note: Input is as follows:
 //bin/ls <FLAGS> <FILES/DIR> "bin/ls -al"
@@ -41,13 +40,10 @@ int main(int argc, char** argv){
     //FIXME - Below is an outine of how I think dirNames should be held
     //		both it an fileName should be arrays/vectors that can hold unlimited values
     //		Vectors makes more sense with pushback now that I think on it
-    //char const dirName[BUFSIZ];
-    //int cnt = 0;
-    //dirName[cnt] = ".";
     string fileName = "";
     setlocale(LC_ALL, "en_US.UTF-8");
 
-    //Flag assignment and optional param check
+    //Flag assignment and Optional param check
     for(int i = 1; i < argc; i++){
 	lstat(argv[i], &statbuf);
 
@@ -88,8 +84,11 @@ int main(int argc, char** argv){
 	}
     }
 
-    vector<string> v; //Vector to hold output
+    //Output vector
+    vector<string> v;
     char temp[512];
+
+    //Checks validity of directory
     DIR *dirp;
     dirent *direntp;
     if((dirp = opendir(dirName)));
@@ -97,7 +96,9 @@ int main(int argc, char** argv){
 	perror("opendir failed");
 	exit(1);
     }
-    if((flags == 0) || (flags == 2) || (flags == 4)){ //handles . and ..
+
+    //Skips . and .. if -a not passed
+    if((flags == 0) || (flags == 2) || (flags == 4)){
 	if(direntp = readdir(dirp)){
 	}else{
 	    perror("readdir1 failed");
@@ -108,7 +109,7 @@ int main(int argc, char** argv){
 	}
     }
 
-    
+    //Remaining part of dir is read
     errno = 0;
     while((direntp = readdir(dirp))){
 	v.push_back(direntp->d_name);
@@ -116,26 +117,32 @@ int main(int argc, char** argv){
     if(errno != 0){
 	perror("readdir3 failed");
     }
-
-    //Closes directory
+    //Closes dir
     if(closedir(dirp) == -1){
         perror("closedir error"); 
     }
 
+    //FIXME - Make case insensitive later
     sort(v.begin(), v.end());
+
+
+    //Output Handler
     for(unsigned i = 0; i < v.size(); i++){
 	    bool isValid = true; //Used to check with fileName's passed in
-	    if((flags == 0) || (flags == 1)){//ls or ls -a
-		    if(fileName != ""){//if File passed in
+	    //ls or ls -a
+	    if((flags == 0) || (flags == 1)){
+		    if(fileName != ""){//if a file was passed
 			isValid = false;
-			if(fileName == v.at(i)){ //if this IS the file
+			if(fileName == v.at(i)){ //if this matches that file
 			    isValid = true;
 			}
 		    }
-		    if(isValid){//no file passed in
+		    //No file passed or a match found, print
+		    if(isValid){
 			cout << v.at(i) << endl;
 		    }
-	    }else if((flags == 2) || (flags == 3)){//ls -l or ls -al
+	    //ls -l or ls -la
+	    }else if((flags == 2) || (flags == 3)){
 		if(fileName != ""){//if file passed
 		    isValid = false;
 		    if(fileName == v.at(i)){//of this IS file
@@ -143,14 +150,17 @@ int main(int argc, char** argv){
 		    }
 		}
 		if(isValid){//no file passed
+		    //File type check
 		    if(isSysLink){
 			cout << "l";
-	    	    }else if(S_ISDIR(statbuf.st_mode)){ //Checks for dir
+	    	    }else if(S_ISDIR(statbuf.st_mode)){
 			cout << "d";
 		    }else{
 			cout << "-";
-		    }//End file type check
+		    }
 		    
+		    //FIXME - Use dirName.at().size() + v.at(i).size() + 1?
+		    //Appends ./ and prepends / to dirName
 		    char str[sizeof(dirName) + sizeof(v.at(i)) + 128];
 		    strcpy(str, "./");
 		    strcat(str, dirName);

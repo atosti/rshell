@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <map>
+#include <vector>
 using namespace std;
 
 void quit(){
@@ -281,7 +282,7 @@ int main(int argc, char* argv[]){
     signal(SIGINT, sig);
     pidParent = getpid();
     string usrInput; //Holds user input
-
+    char *path = getenv("PATH"); //sets path
     chdir("./");
 
     //Creates a map for non-exec commands
@@ -479,12 +480,56 @@ int main(int argc, char* argv[]){
 	        }
 		//Child process
 	  	if(pid2 == 0){
+		    //Stores PATH in a char*
+		    //char *path = getenv("PATH");
+		    if(path == NULL){
+			cout << "Error: PATH is null" << endl;
+			exit(1);
+		    }
+
+		    //Counts length of PATH
+		    char *temp = path;
+		    int cnt2 = 0;
+		    for(; temp[cnt2] != '\0'; cnt2++);
+
+		    //Creates an array of pathes for execv
+		    char *token2 = strtok(path, ":");
+		    char *arr[cnt2 + 1];
+		    int cnt3 = 0; //Num of paths
+
+	    	    while(token2 != NULL){
+	    	   	arr[cnt3] = token2;
+			cout << "arr[" << cnt3 << "]: " << arr[cnt3] << endl;
+	    	    	token2 = strtok(NULL, ":");
+	    	    	cnt3++;
+	            }
+	            strcat(arr[cnt3-1], "\0");
+	            arr[cnt3] = token2; //Null terms array
+		
+		    //Appends "/cmd" to the paths and stores them in vector
+		    string str;
+		    vector<string> vc; 
+		    for(unsigned q = 0; q < cnt3; q++){
+			str = arr[q];
+			str.append("/");
+			str.append(argv[0]);
+			vc.push_back(str);
+		    }
+
 		    if(!runExec){
 			exit(1);
-		    }else if(execvp(argv[0], argv) == -1){//Runs on each argv[]
+		    }else{
+			//Searches each path for cmd
+			for(unsigned x = 0; x < cnt3; x++){
+			    execv(vc.at(x).c_str(), argv);
+			}
+			perror("execv failed");
+			exit(1);
+		    }
+		    /*}else if(execvp(argv[0], argv) == -1){//Runs on each argv[]
 		    	perror("execvp() failed");
 		        exit(1);
-		    }
+		    }*/
 	    	}
 	   	//Parent function
 	   	if(-1 == waitpid(pid2, &ret,0)){ //waits on child-execs in order

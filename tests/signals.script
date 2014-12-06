@@ -1,0 +1,95 @@
+Script started on Fri 05 Dec 2014 05:36:00 PM PST
+~
+atost001@hammer $ ssh[K[K[Kcs100
+[0;91m
+===============================================================================
+|                                                                             |
+| You have enabled settings specific for cs100.                               |
+|                                                                             |
+===============================================================================
+[0m
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~[0;95m [0;36m$[0m cd Documents/CS100/HW0
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~/Documents/CS100/HW0[0;95m (redo2) [0;36m$[0m ls
+bin  file  LICENSE  Makefile  README.md  signals.script  src  tests
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~/Documents/CS100/HW0[0;95m (redo2) [0;36m$[0m make
+if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+g++ "-g -Wall -Werror -ansi -pedantic" ./src/exec.o -o ./bin/rshell
+if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+g++ "-g -Wall -Werror -ansi -pedantic" ./src/ls.o -o ./bin/ls
+if [ ! -d "./bin" ]; then mkdir "./bin"; fi
+g++ "-g -Wall -Werror -ansi -pedantic" ./src/cp.o -o ./bin/cp
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~/Documents/CS100/HW0[0;95m (redo2) [0;36m$[0m bin/s[Krshell
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ #CD test cases:
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cd #No args
+Error: No argument passed to cd
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cd ./ #  src #1 arg w preceded by ./
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0/src $ cd ../..  ../HW0 #1 arg that's a path
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cd src #1ar   t ar    1 arg without a ./            that's not a path
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0/src $ cd .. junk junk #2 Multiple args
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cd junk #invalid arg
+cd failed: No such file or directory
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ #  Signal ^C tests
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cat   #! 1st is in parent                 ^C^C^C^C #in parent
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ ls
+LICENSE  Makefile  README.md  bin  file  signals.script  src  tests
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ ^C^C^C^Cls
+LICENSE  Makefile  README.md  bin  file  signals.script  src  tests
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ #In child
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cat
+^Catost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ ls
+LICENSE  Makefile  README.md  bin  file  signals.script  src  tests
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ #Execv Te  test cases:
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ ls
+LICENSE  Makefile  README.md  bin  file  signals.script  src  tests
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ ls -a -l
+total 32
+drwx------  6 atost001 csmajs 4096 Dec  5 17:34 .
+drwx------ 14 atost001 csmajs 4096 Dec  1 08:38 ..
+drwx------  8 atost001 csmajs 4096 Dec  5 17:33 .git
+-rw-------  1 atost001 csmajs   56 Nov 28 00:22 LICENSE
+-rw-------  1 atost001 csmajs  599 Nov 11 23:43 Makefile
+-rw-------  1 atost001 csmajs 1797 Nov 28 00:22 README.md
+drwx------  2 atost001 csmajs 4096 Dec  5 17:34 bin
+-rw-------  1 atost001 csmajs   12 Dec  5 17:23 file
+-rw-------  1 atost001 csmajs    0 Dec  5 17:34 signals.script
+drwx------  3 atost001 csmajs 4096 Dec  5 17:33 src
+drwx------  2 atost001 csmajs 4096 Nov 21 00:01 tests
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ echo test   est
+test
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ ls -al  ; echo test; pwd; exit
+total 32
+drwx------  6 atost001 csmajs 4096 Dec  5 17:34 .
+drwx------ 14 atost001 csmajs 4096 Dec  1 08:38 ..
+drwx------  8 atost001 csmajs 4096 Dec  5 17:33 .git
+-rw-------  1 atost001 csmajs   56 Nov 28 00:22 LICENSE
+-rw-------  1 atost001 csmajs  599 Nov 11 23:43 Makefile
+-rw-------  1 atost001 csmajs 1797 Nov 28 00:22 README.md
+drwx------  2 atost001 csmajs 4096 Dec  5 17:34 bin
+-rw-------  1 atost001 csmajs   12 Dec  5 17:23 file
+-rw-------  1 atost001 csmajs    0 Dec  5 17:34 signals.script
+drwx------  3 atost001 csmajs 4096 Dec  5 17:33 src
+drwx------  2 atost001 csmajs 4096 Nov 21 00:01 tests
+test
+/home/csmajs/atost001/Documents/CS100/HW0
+Exiting...
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~/Documents/CS100/HW0[0;95m (redo2) [0;36m$[0m bin/rshell
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ tee file
+I am a happy file.
+I am a happy file.
+^Catost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cat file
+I am a happy file.
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cat file2 ||        nonfile || echo printme
+cat: nonfile: No such file or directory
+printme
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cat file && echo printme
+I am a happy file.
+printme
+atost001@hammer.cs.ucr.edu:/home/csmajs/atost001/Documents/CS100/HW0 $ cat   exit
+Exiting...
+[s%%%%%%%%%%[u[0;32matost001[0;36m@[0;32mcs100[0;36m:[0;32m~/Documents/CS100/HW0[0;95m (redo2) [0;36m$[0m exit
+exit
+~
+atost001@hammer $ exit
+exit
+
+Script done on Fri 05 Dec 2014 05:41:01 PM PST

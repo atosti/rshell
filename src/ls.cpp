@@ -25,6 +25,9 @@ using namespace std;
 //Sort output alphabetically case insensitive
 //Allow multiple files to be input and then output them properly
 //    this means mult. separate files, not a path of numerous files
+//    make dirName and fileName vectors
+//Running "-al tDir" doesn't mark directories with a proper d
+//    find where to call stat properly to make this work better
 
 //Note: Input is as follows:
 //bin/ls <FLAGS> <FILES/DIR> "bin/ls -al"
@@ -77,8 +80,7 @@ int main(int argc, char** argv){
 	            }
 	        }
             }else{
-		//Assigns garbage value to dirName so it will
-		//return an error on opendir
+		//Assigns dirName garbage so opendir fails
 		dirName = argv[i];
 	    }
 	}
@@ -160,6 +162,7 @@ int main(int argc, char** argv){
 		    }
 		    
 		    //FIXME - Use dirName.at().size() + v.at(i).size() + 1?
+		    //		when they're vectors
 		    //Appends ./ and prepends / to dirName
 		    char str[sizeof(dirName) + sizeof(v.at(i)) + 128];
 		    strcpy(str, "./");
@@ -168,11 +171,15 @@ int main(int argc, char** argv){
 		    string str1 = v.at(i);
 		    strcat(str, str1.c_str()); 
 
+		    //FIXME - implement -l into its own function
+		    //str, statbuf
+
 		    if(stat(str, &statbuf) == -1){//Sets statbuf
 			perror("stat() failed");
 			exit(1);
 	    	    }
-		    if(statbuf.st_mode & S_IRUSR){//Owner permissions
+		    //Owner permissions
+		    if(statbuf.st_mode & S_IRUSR){
 			cout << "r";
 		    }else{
 			cout << "-";
@@ -187,7 +194,8 @@ int main(int argc, char** argv){
 		    }else{
 		        cout << "-";
 		    }
-		    if(statbuf.st_mode & S_IRGRP){//Group permissions
+		    //Group permissions
+		    if(statbuf.st_mode & S_IRGRP){
 			cout << "r";
 		    }else{
 			cout << "-";
@@ -202,7 +210,8 @@ int main(int argc, char** argv){
 		    }else{
 			cout << "-";
 		    }
-		    if(statbuf.st_mode & S_IROTH){//Other permissions
+		    //Other permissions
+		    if(statbuf.st_mode & S_IROTH){
 			cout << "r";
 		    }else{
 		        cout << "-";
@@ -217,29 +226,33 @@ int main(int argc, char** argv){
 		    }else{
 		        cout << "-";
 		    }
+		    //Num of system links
 		    int num = 0;
-		    if(num = statbuf.st_nlink){//Num system links
+		    if(num = statbuf.st_nlink){
 			cout << " " << num << " ";
 		    }else{
 			perror("st_nlink error");
 			exit(1);
 		    }
+		    //User ID
 		    struct passwd *pwd;
-		    if((pwd = getpwuid(statbuf.st_uid)) != NULL){//User ID
+		    if((pwd = getpwuid(statbuf.st_uid)) != NULL){
 			cout << pwd->pw_name << " ";
 		    }else{
 			perror("getpwuid failed");
 			exit(1);
 		    }
+		    //Group ID
 		    struct group *grp;
-		    if((grp = getgrgid(statbuf.st_gid)) != NULL){//Group ID
+		    if((grp = getgrgid(statbuf.st_gid)) != NULL){
 			cout << grp->gr_name << " ";
 		    }else{
 			perror("getgrgid failed");
 			exit(1);
 		    }
-		    cout << statbuf.st_size << " "; //File size in bytes
-		    if(num = statbuf.st_mtime){//Time of last modification
+		    //File size in bytes and Time of last mod.
+		    cout << statbuf.st_size << " ";
+		    if(num = statbuf.st_mtime){
 			time_t rawtime = statbuf.st_mtime;
 			char buffer [80];
 		        struct tm *timeinfo;
@@ -251,9 +264,11 @@ int main(int argc, char** argv){
 			exit(1);
 		    }
 		    cout << v.at(i) << endl;
+	    //ls -R and ls -aR
 	    }else if((flags == 4) || (flags == 5)){
 		//if FileName is a directory
 		//if Curr file is directory - enter it
+	    //ls -lR and -alR
 	    }else if((flags == 6) || (flags == 7)){//ls -lR and ls -alR
 		//-l AND -R are set
 		//if curr file is dir; enter it

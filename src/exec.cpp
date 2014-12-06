@@ -319,7 +319,7 @@ int main(int argc, char* argv[]){
 	char input[usrInput.length() + 1];
 	strcpy(input, usrInput.c_str());
 
-	//Comment handling and Operator checking
+	//Comment Handling and Operator checking
 	bool semiOp = false;
 	bool andOp = false;
 	bool orOp = false;
@@ -499,7 +499,6 @@ int main(int argc, char* argv[]){
 
 	    	    while(token2 != NULL){
 	    	   	arr[cnt3] = token2;
-			cout << "arr[" << cnt3 << "]: " << arr[cnt3] << endl;
 	    	    	token2 = strtok(NULL, ":");
 	    	    	cnt3++;
 	            }

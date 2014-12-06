@@ -153,7 +153,11 @@ int main(int argc, char** argv){
 		}
 		if(isValid){//no file passed
 		    //File type check
-		    if(isSysLink){
+		    if(lstat(v.at(i).c_str(), &statbuf) == -1){
+			perror("lstat() failed");
+			exit(1);
+		    }
+		    if(S_ISLNK(statbuf.st_mode)){
 			cout << "l";
 	    	    }else if(S_ISDIR(statbuf.st_mode)){
 			cout << "d";
@@ -174,8 +178,8 @@ int main(int argc, char** argv){
 		    //FIXME - implement -l into its own function
 		    //str, statbuf
 
-		    if(stat(str, &statbuf) == -1){//Sets statbuf
-			perror("stat() failed");
+		    if(lstat(str, &statbuf) == -1){//Sets statbuf
+			perror("lstat() failed");
 			exit(1);
 	    	    }
 		    //Owner permissions

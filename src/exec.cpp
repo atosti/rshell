@@ -7,8 +7,26 @@
 #include <string.h>
 #include <cstring>
 #include <fcntl.h>
-
+#include <signal.h>
+#include <map>
+#include <vector>
 using namespace std;
+
+void quit(){
+    cout << "Exiting..." << endl;
+    exit(0);
+}
+/*
+void cd(){
+    //If no params passed, change to HOME
+    if(chdir(getenv("HOME")) == -1){
+	perror("chdir failed");
+	exit(1);
+    }
+    char buf[BUFSIZ];
+    cout << "CWD: " << getcwd(buf, sizeof(buf)) << endl;
+}
+*/
 
 void redirect(char* argv[], int num, bool &runExec){//consider making a bool to check if any operators are found
     int x = 0;
@@ -244,10 +262,37 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 
 }
 
+//Globals for use in sig handler
+int pid = 0;
+int pid2 = 0;
+int pidParent = 0;
+
+//Signal Handler
+void sig(int signum){
+    //^C handling 
+    //FIXME - Find test cases for ^C
+    if(signum == SIGINT){
+	if(getpid() != pidParent){
+	    kill(getpid(), SIGKILL);
+	}
+    }
+}
+
 int main(int argc, char* argv[]){
+    signal(SIGINT, sig);
+    pidParent = getpid();
     string usrInput; //Holds user input
+    char *path = getenv("PATH"); //sets path
+    chdir("./");
+
+    //Creates a map for non-exec commands
+    map<string, void (*)()> commands;
+    commands["exit"] = quit;
+    //commands["cd"] = cd;
+
     while(1){
 	//Prints login/hostname prompt
+	char buf[BUFSIZ];
 	char *login;
 	if((login = getlogin()) == NULL){
 	    perror("getlogin failed");
@@ -264,7 +309,9 @@ int main(int argc, char* argv[]){
 	for(unsigned i = 0; login[i] != '\0'; i++){
 	    cout << login[i];
 	}
-        cout << "$ ";
+	//FIXME - Ensure this is proper output
+	//Note: getcwd() causes "still reachable" mem leaks
+	cout << ":" << getcwd(buf, sizeof(buf)) << " $ ";
 
 	//Handles input
 	getline(cin, usrInput);
@@ -272,7 +319,7 @@ int main(int argc, char* argv[]){
 	char input[usrInput.length() + 1];
 	strcpy(input, usrInput.c_str());
 
-	//Comment handling and Operator checking
+	//Comment Handling and Operator checking
 	bool semiOp = false;
 	bool andOp = false;
 	bool orOp = false;
@@ -330,7 +377,6 @@ int main(int argc, char* argv[]){
 	    }
     	    strcat(a[cnt - 1], "\0");
 	    a[cnt] = token; //Null terminates a[]
-
 	//Tokenizes Or operator(||)
 	}else if(orOp){
 	    token = strtok(input, "|");
@@ -346,16 +392,26 @@ int main(int argc, char* argv[]){
 
 	//Fork for each command (separated by semicolons)
 	int curr = 0;
+	bool isCmd = false;
+	bool isCd = false;
 	for(int i = 0; i < cnt; i++){//Tokenizes a[] removing " "
-	    token = strtok(a[i], " "); //Resets token
+	    token = strtok(a[i], " ");
 	    curr = 0;
+	    isCmd = false;
+	    isCd = false;
 
 	    //Removes spaces and tabs, places result in argv[]
 	    while(token != NULL){
-	        argv[curr] = token;	  
-		if(strcmp(argv[curr], "exit") == 0){//Exit check
-		    cout << "Exiting..." << endl;
-		    exit(0);
+	        argv[curr] = token;
+
+		//Checks for custom commands
+		if(commands.find(argv[0]) != commands.end()){
+		    commands.at(argv[curr])();
+		    isCmd = true;
+		}
+		//Cd check
+		if(strcmp(argv[0], "cd") == 0){
+		   isCd = true;
 		}
 		strcat(argv[curr], "\0");
 		token = strtok(NULL, " \t");
@@ -363,6 +419,33 @@ int main(int argc, char* argv[]){
 	    }
 	    argv[curr] = token; //Null term argv
 
+	    //Cd handler
+	    //FIXME - Test with test cases!
+	    if(isCd){
+		//If no path passed, print an error message
+		//Note: Bash changes it to HOME dir
+		if(curr == 1){
+		    cout << "Error: No argument passed to cd" << endl;
+		//If it begins with a / or ./ proceed
+		}else if((argv[1][0] == '/') || (argv[1][0] == '.' && argv[1][1] == '/')){
+		   if(chdir(argv[1]) == -1){
+			perror("cd failed");
+		    }
+		//If it needs to be appended with ./
+		}else{
+		    string path = "./";
+		    path.append(argv[1]);
+		    if(chdir(argv[1]) == -1){
+			perror("cd failed");
+		    }
+		}
+		//Note: cd doesn't care about more than 1 arg being passed
+	    }
+
+	    //Prevents execvp from running on commands
+	    if(isCmd || isCd){
+		continue;
+	    }
 	    //Connector Handling
 	    if(andOp){
 		if(!valid){
@@ -373,20 +456,16 @@ int main(int argc, char* argv[]){
 		    continue;
 		}
 	    }
-	    //assign true and false to either side of connectors
-	    //If prev succeeds, do AND 
-	    //If prev fails, do OR
 
 	    //Forks before redirect()
 	    int ret = 0;
-	    int pid = fork();
+	    pid = fork();
 	    if(pid == -1){
 		perror("pid failed");
 		exit(1);
 	    }else if(pid == 0){//Child process 
 	        int num = 0;
 		bool runExec = true;
-
 		//Counts # of args in argv
 	    	while(argv[num] != NULL){
 		    num++;
@@ -394,19 +473,62 @@ int main(int argc, char* argv[]){
 	        redirect(argv, num, runExec); //i/o redirection
 
 		//Second fork
-	        int pid2 = fork();
+	        pid2 = fork();
 	        if(pid2 == -1){
 		    perror("pid fork failed");
 		    exit(1);
 	        }
 		//Child process
 	  	if(pid2 == 0){
+		    //Stores PATH in a char*
+		    //char *path = getenv("PATH");
+		    if(path == NULL){
+			cout << "Error: PATH is null" << endl;
+			exit(1);
+		    }
+
+		    //Counts length of PATH
+		    char *temp = path;
+		    int cnt2 = 0;
+		    for(; temp[cnt2] != '\0'; cnt2++);
+
+		    //Creates an array of pathes for execv
+		    char *token2 = strtok(path, ":");
+		    char *arr[cnt2 + 1];
+		    int cnt3 = 0; //Num of paths
+
+	    	    while(token2 != NULL){
+	    	   	arr[cnt3] = token2;
+	    	    	token2 = strtok(NULL, ":");
+	    	    	cnt3++;
+	            }
+	            strcat(arr[cnt3-1], "\0");
+	            arr[cnt3] = token2; //Null terms array
+		
+		    //Appends "/cmd" to the paths and stores them in vector
+		    string str;
+		    vector<string> vc; 
+		    for(unsigned q = 0; q < cnt3; q++){
+			str = arr[q];
+			str.append("/");
+			str.append(argv[0]);
+			vc.push_back(str);
+		    }
+
 		    if(!runExec){
 			exit(1);
-		    }else if(execvp(argv[0], argv) == -1){//Runs on each argv[]
+		    }else{
+			//Searches each path for cmd
+			for(unsigned x = 0; x < cnt3; x++){
+			    execv(vc.at(x).c_str(), argv);
+			}
+			perror("execv failed");
+			exit(1);
+		    }
+		    /*}else if(execvp(argv[0], argv) == -1){//Runs on each argv[]
 		    	perror("execvp() failed");
 		        exit(1);
-		    }
+		    }*/
 	    	}
 	   	//Parent function
 	   	if(-1 == waitpid(pid2, &ret,0)){ //waits on child-execs in order
@@ -415,8 +537,7 @@ int main(int argc, char* argv[]){
 	        }else if(WIFEXITED(ret) && WEXITSTATUS(ret) != 0){
 		    return -1;
 		}
-		exit(0); //Exits the child process
-	        //End Pid2 process
+		exit(0); //Exits child(end pid2)
 	    //Pid parent
 	    }else{
 		if(-1 == waitpid(pid, &ret, 0)){

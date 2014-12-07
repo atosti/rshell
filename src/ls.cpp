@@ -26,12 +26,137 @@ using namespace std;
 //Allow multiple files to be input and then output them properly
 //    this means mult. separate files, not a path of numerous files
 //    make dirName and fileName vectors
-//Running "-al tDir" doesn't mark directories with a proper d
-//    find where to call stat properly to make this work better
 
 //Note: Input is as follows:
 //bin/ls <FLAGS> <FILES/DIR> "bin/ls -al"
 //or bin/ls <FILES/DIR> <FLAGS> "bin/ls test.cpp -l"
+
+//Handles -l output
+int printAll(string currFile, struct stat statbuf, const char* dirName){
+    //File type check
+    if(lstat(currFile.c_str(), &statbuf) == -1){
+	perror("lstat() failed");
+	exit(1);
+    }
+    if(S_ISLNK(statbuf.st_mode)){
+	cout << "l";
+    }else if(S_ISDIR(statbuf.st_mode)){
+	cout << "d";
+    }else{
+	cout << "-";
+    }    
+
+    //FIXME - Use dirName.at().size() + currFile.size() + 1?
+    //		when they're vectors
+    //Appends ./ and prepends / to dirName
+    //FIXME - This size array is wrong
+    char str[sizeof(dirName) + sizeof(currFile) + 128];
+    strcpy(str, "./");
+    strcat(str, dirName);
+    strcat(str, "/");
+    string str1 = currFile;
+    strcat(str, str1.c_str()); 
+
+    //FIXME - implement -l into its own function
+    //str, statbuf
+
+    if(lstat(str, &statbuf) == -1){//Sets statbuf
+	perror("lstat() failed");
+	exit(1);
+    }
+    //Owner permissions
+    if(statbuf.st_mode & S_IRUSR){
+	cout << "r";
+    }else{
+	cout << "-";
+    }
+    if(statbuf.st_mode & S_IWUSR){
+	cout << "w";
+    }else{
+        cout << "-";
+    }
+    if(statbuf.st_mode & S_IXUSR){
+	cout << "x";
+    }else{
+        cout << "-";
+    }
+    //Group permissions
+    if(statbuf.st_mode & S_IRGRP){
+	cout << "r";
+    }else{
+	cout << "-";
+    }
+    if(statbuf.st_mode & S_IWGRP){
+	cout << "w";
+    }else{
+	cout << "-";
+    }
+    if(statbuf.st_mode & S_IXGRP){
+	cout << "x";
+    }else{
+	cout << "-";
+    }
+    //Other permissions
+    if(statbuf.st_mode & S_IROTH){
+	cout << "r";
+    }else{
+        cout << "-";
+    }
+    if(statbuf.st_mode & S_IWOTH){
+	cout << "w";
+    }else{
+        cout << "-";
+    }
+    if(statbuf.st_mode & S_IXOTH){
+	cout << "x";
+    }else{
+        cout << "-";
+    }
+    //Num of system links
+    int num = 0;
+    if(num = statbuf.st_nlink){
+	cout << " " << num << " ";
+    }else{
+	perror("st_nlink error");
+	exit(1);
+    }
+    //User ID
+    struct passwd *pwd;
+    if((pwd = getpwuid(statbuf.st_uid)) != NULL){
+	cout << pwd->pw_name << " ";
+    }else{
+	perror("getpwuid failed");
+	exit(1);
+    }
+    //Group ID
+    struct group *grp;
+    if((grp = getgrgid(statbuf.st_gid)) != NULL){
+	cout << grp->gr_name << " ";
+    }else{
+	perror("getgrgid failed");
+	exit(1);
+    }
+    //File size in bytes and Time of last mod.
+    cout << statbuf.st_size << " ";
+    if(num = statbuf.st_mtime){
+	time_t rawtime = statbuf.st_mtime;
+	char buffer [80];
+        struct tm *timeinfo;
+	timeinfo = localtime(&rawtime);
+	strftime(buffer, 80, "%b %e %H:%M", timeinfo);
+	cout << buffer << " ";
+    }else{
+	perror("st_mtime failed");
+	exit(1);
+    }
+    cout << currFile << endl;
+
+    return 0;
+}
+
+bool sFunc(string i, string j){
+    return i<j;
+}
 
 int main(int argc, char** argv){
     //Main variables and setup for later
@@ -125,8 +250,7 @@ int main(int argc, char** argv){
     }
 
     //FIXME - Make case insensitive later
-    sort(v.begin(), v.end());
-
+    sort(v.begin(), v.end(), sFunc);
 
     //Output Handler
     for(unsigned i = 0; i < v.size(); i++){
@@ -145,129 +269,7 @@ int main(int argc, char** argv){
 		    }
 	    //ls -l or ls -la
 	    }else if((flags == 2) || (flags == 3)){
-		if(fileName != ""){//if file passed
-		    isValid = false;
-		    if(fileName == v.at(i)){//of this IS file
-			isValid = true;
-		    }
-		}
-		if(isValid){//no file passed
-		    //File type check
-		    if(lstat(v.at(i).c_str(), &statbuf) == -1){
-			perror("lstat() failed");
-			exit(1);
-		    }
-		    if(S_ISLNK(statbuf.st_mode)){
-			cout << "l";
-	    	    }else if(S_ISDIR(statbuf.st_mode)){
-			cout << "d";
-		    }else{
-			cout << "-";
-		    }
-		    
-		    //FIXME - Use dirName.at().size() + v.at(i).size() + 1?
-		    //		when they're vectors
-		    //Appends ./ and prepends / to dirName
-		    char str[sizeof(dirName) + sizeof(v.at(i)) + 128];
-		    strcpy(str, "./");
-		    strcat(str, dirName);
-		    strcat(str, "/");
-		    string str1 = v.at(i);
-		    strcat(str, str1.c_str()); 
-
-		    //FIXME - implement -l into its own function
-		    //str, statbuf
-
-		    if(lstat(str, &statbuf) == -1){//Sets statbuf
-			perror("lstat() failed");
-			exit(1);
-	    	    }
-		    //Owner permissions
-		    if(statbuf.st_mode & S_IRUSR){
-			cout << "r";
-		    }else{
-			cout << "-";
-		    }
-		    if(statbuf.st_mode & S_IWUSR){
-			cout << "w";
-		    }else{
-		        cout << "-";
-		    }
-		    if(statbuf.st_mode & S_IXUSR){
-			cout << "x";
-		    }else{
-		        cout << "-";
-		    }
-		    //Group permissions
-		    if(statbuf.st_mode & S_IRGRP){
-			cout << "r";
-		    }else{
-			cout << "-";
-		    }
-		    if(statbuf.st_mode & S_IWGRP){
-			cout << "w";
-		    }else{
-			cout << "-";
-		    }
-		    if(statbuf.st_mode & S_IXGRP){
-			cout << "x";
-		    }else{
-			cout << "-";
-		    }
-		    //Other permissions
-		    if(statbuf.st_mode & S_IROTH){
-			cout << "r";
-		    }else{
-		        cout << "-";
-		    }
-		    if(statbuf.st_mode & S_IWOTH){
-			cout << "w";
-		    }else{
-		        cout << "-";
-		    }
-		    if(statbuf.st_mode & S_IXOTH){
-			cout << "x";
-		    }else{
-		        cout << "-";
-		    }
-		    //Num of system links
-		    int num = 0;
-		    if(num = statbuf.st_nlink){
-			cout << " " << num << " ";
-		    }else{
-			perror("st_nlink error");
-			exit(1);
-		    }
-		    //User ID
-		    struct passwd *pwd;
-		    if((pwd = getpwuid(statbuf.st_uid)) != NULL){
-			cout << pwd->pw_name << " ";
-		    }else{
-			perror("getpwuid failed");
-			exit(1);
-		    }
-		    //Group ID
-		    struct group *grp;
-		    if((grp = getgrgid(statbuf.st_gid)) != NULL){
-			cout << grp->gr_name << " ";
-		    }else{
-			perror("getgrgid failed");
-			exit(1);
-		    }
-		    //File size in bytes and Time of last mod.
-		    cout << statbuf.st_size << " ";
-		    if(num = statbuf.st_mtime){
-			time_t rawtime = statbuf.st_mtime;
-			char buffer [80];
-		        struct tm *timeinfo;
-			timeinfo = localtime(&rawtime);
-			strftime(buffer, 80, "%b %e %H:%M", timeinfo);
-			cout << buffer << " ";
-		    }else{
-			perror("st_mtime failed");
-			exit(1);
-		    }
-		    cout << v.at(i) << endl;
+		printAll(v.at(i), statbuf, dirName);
 	    //ls -R and ls -aR
 	    }else if((flags == 4) || (flags == 5)){
 		//if FileName is a directory
@@ -278,7 +280,6 @@ int main(int argc, char** argv){
 		//if curr file is dir; enter it
 		//output with -l info
 	    }
-	}
     }
     return 0;
 }

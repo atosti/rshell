@@ -71,6 +71,7 @@ int nameSort(int argc, char** argv, vector<string> &dirName, vector<string> &fil
     }
 }
 
+//Prints function for long listing flag
 int printAll(string currFile, string dirName){
     struct stat statbuf;
     //Appends ./ and prepends / to dirName
@@ -78,12 +79,11 @@ int printAll(string currFile, string dirName){
     str.append(dirName);
     str.append("/");
     str.append(currFile);
-
-    if(lstat(str.c_str(), &statbuf) == -1){//Sets statbuf
+    //Sets statbuf
+    if(lstat(str.c_str(), &statbuf) == -1){
 	perror("printAll lstat() failed");
 	exit(1);
     }
-
     //File type check
     if(S_ISLNK(statbuf.st_mode)){
 	cout << "l";
@@ -92,7 +92,6 @@ int printAll(string currFile, string dirName){
     }else{
 	cout << "-";
     }
-
     //Owner permissions
     if(statbuf.st_mode & S_IRUSR){
 	cout << "r";
@@ -189,7 +188,9 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
     dirent *direntp;
     sort(dirName.begin(), dirName.end());
     for(unsigned i = 0; i < dirName.size(); i++){
-	cout << dirName.at(i) << ":" << endl;
+	if(dirName.size() > 1){
+	    cout << dirName.at(i) << ":" << endl;
+	}
     	currDir = dirName.at(i);
 	if((dirp = opendir(currDir.c_str())));
     	else{
@@ -416,15 +417,7 @@ int main(int argc, char** argv){
 //TODO:
 //Format the output left to right in columns
 //Sort output alphabetically case insensitive
-//Allow multiple files to be input and then output them properly
-//    this means mult. separate files, not a path of numerous files
-//    make dirName and fileName vectors
 
-//Note: Input is as follows:
-//bin/ls <FLAGS> <FILES/DIR> "bin/ls -al"
-//or bin/ls <FILES/DIR> <FLAGS> "bin/ls test.cpp -l"
-
-//Handles -l output
 /*
 int printAll(string currFile, struct stat statbuf, const char* dirName){
     //File type check

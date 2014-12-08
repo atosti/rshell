@@ -270,7 +270,6 @@ int pidParent = 0;
 //Signal Handler
 void sig(int signum){
     //^C handling 
-    //FIXME - Find test cases for ^C
     if(signum == SIGINT){
 	if(getpid() != pidParent){
 	    kill(getpid(), SIGKILL);
@@ -309,7 +308,6 @@ int main(int argc, char* argv[]){
 	for(unsigned i = 0; login[i] != '\0'; i++){
 	    cout << login[i];
 	}
-	//FIXME - Ensure this is proper output
 	//Note: getcwd() causes "still reachable" mem leaks
 	cout << ":" << getcwd(buf, sizeof(buf)) << " $ ";
 
@@ -420,7 +418,6 @@ int main(int argc, char* argv[]){
 	    argv[curr] = token; //Null term argv
 
 	    //Cd handler
-	    //FIXME - Test with test cases!
 	    if(isCd){
 		//If no path passed, print an error message
 		//Note: Bash changes it to HOME dir

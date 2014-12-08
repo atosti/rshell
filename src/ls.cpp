@@ -69,17 +69,14 @@ int nameSort(int argc, char** argv, vector<string> &dirName, vector<string> &fil
     }
 }
 
-int output(int ns, int flags, vector<string> dirName, vector<string> fileName){
+int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
     string currDir = "";
-    string currFile = "";
-    vector<string> vout; //holds files to be output
     DIR *dirp;
     dirent *direntp;
-
-    //---No files passed---
-    if(ns == 0){
-	currDir = ".";
-	currFile = "";
+    sort(dirName.begin(), dirName.end());
+    for(unsigned i = 0; i < dirName.size(); i++){
+	cout << dirName.at(i) << ":" << endl;
+    	currDir = dirName.at(i);
 	if((dirp = opendir(currDir.c_str())));
     	else{
 	    perror("opendir failed");
@@ -89,11 +86,11 @@ int output(int ns, int flags, vector<string> dirName, vector<string> fileName){
     	if((flags == 0) || (flags == 2) || (flags == 4)){
 	    if(direntp = readdir(dirp));
 	    else{
-	    	perror("readdir1 failed");
+	        perror("readdir1 failed");
 	    }
-	    if(direntp = readdir(dirp));
-	    else{
-	    	perror("readdir2 failed");
+	    if(direntp = readdir(dirp)){
+	    }else{
+	        perror("readdir2 failed");
 	    }
         }
 	errno = 0;
@@ -101,103 +98,116 @@ int output(int ns, int flags, vector<string> dirName, vector<string> fileName){
 	    vout.push_back(direntp->d_name);
     	}
     	if(errno != 0){
-	    perror("readdir3 failed");
+	    perror("readdir failed");
 	    //FIXME - Does this need to exit/return -1?
     	}
     	//Closes directory
     	if(closedir(dirp) == -1){
-            perror("closedir failed"); 
+            perror("closedir error"); 
     	}
+	//Outputs vout
+	for(unsigned j = 0; j < vout.size(); j++){
+	    cout << vout.at(j) << "  ";
+	}
+	cout << "\n" << endl;
+	//Clears vout for next dir
+	while(vout.size() > 0){
+	    vout.pop_back();
+	}
+    }
+    return 0;
+}
 
+int fileOutput(vector<string> &fileName, vector<string> &vout, int flags){
+    //FIXME - How to handle Files that are paths
+    DIR *dirp;
+    dirent *direntp;
+    string currDir = ".";
+    string currFile = "";	
+    if(dirp = opendir(currDir.c_str()));
+    else{
+	perror("opendir failed");
+        return -1;
+    }
+    errno = 0;
+    while(direntp = readdir(dirp)){
+	currFile = direntp->d_name;
+        for(unsigned i = 0; i < fileName.size(); i++){
+	    //If currFile matches a file in the vector
+	    if(fileName.at(i) == currFile){
+	       vout.push_back(currFile);
+	    }
+	}
+    }
+    if(errno != 0){
+        perror("readdir failed");
+	//FIXME - Do these need to exit/return -1?
+    }
+    if(closedir(dirp) == -1){
+        perror("closedir failed");
+    }
+    sort(vout.begin(), vout.end());
+    for(unsigned i = 0; i < vout.size(); i++){
+        cout << vout.at(i) << " ";
+    }
+    cout << endl;
+    return 0;
+}
+
+int noOutput(vector<string> vout, int flags){
+    DIR *dirp;
+    dirent *direntp;
+    string currDir = ".";
+    string currFile = "";
+    if((dirp = opendir(currDir.c_str())));
+    else{
+	perror("opendir failed");
+	return -1;
+    }
+    //Skips . and .. if -a not passed
+    if((flags == 0) || (flags == 2) || (flags == 4)){
+        if(direntp = readdir(dirp));
+	else{
+	    perror("readdir1 failed");
+	}
+	if(direntp = readdir(dirp));
+	else{
+	    perror("readdir2 failed");
+	}
+    }
+    errno = 0;
+    while((direntp = readdir(dirp))){
+        vout.push_back(direntp->d_name);
+    }
+    if(errno != 0){
+	perror("readdir3 failed");
+	//FIXME - Does this need to exit/return -1?
+    }
+    //Closes directory
+    if(closedir(dirp) == -1){
+        perror("closedir failed"); 
+    }
+    return 0;
+}
+
+int outputHandler(int ns, int flags, vector<string> dirName, vector<string> fileName){
+    string currDir = "";
+    string currFile = "";
+    vector<string> vout; //holds files to be output
+
+    //---No files passed---
+    if(ns == 0){
+	noOutput(vout, flags);
     //---Only files---
     }else if(ns == 1){
-	//FIXME - How to handle paths to filenames?
-	//Note: ls -a doesn't matter for passed in files
-
-	currDir = ".";
-	currFile = "";	
-	if(dirp = opendir(currDir.c_str()));
-	else{
-	    perror("opendir failed");
-	    return -1;
-	}
-	errno = 0;
-	while(direntp = readdir(dirp)){
-	    currFile = direntp->d_name;
-	    for(unsigned i = 0; i < fileName.size(); i++){
-		//If currFile matches a file in the vector
-		if(fileName.at(i) == currFile){
-	   	    vout.push_back(currFile);
-		}
-	    }
-	}
-	if(errno != 0){
-	    perror("readdir failed");
-	   //FIXME - Do these need to exit/return -1?
-	}
-	if(closedir(dirp) == -1){
-	    perror("closedir failed");
-	}
+	fileOutput(fileName, vout, flags);
     //---Only dirs---
     }else if(ns == 2){
-	//Then outputs each dir:
-	//  <then all files listed here>
-	sort(dirName.begin(), dirName.end());
-	for(unsigned i = 0; i < dirName.size(); i++){
-	    cout << dirName.at(i) << ":" << endl;
-	    currDir = dirName.at(i);
-
-	    if((dirp = opendir(currDir.c_str())));
-    	    else{
-	    	perror("opendir failed");
-	    	return -1;
-    	    }
-	    //Skips . and .. if -a not passed
-    	    if((flags == 0) || (flags == 2) || (flags == 4)){
-	    	if(direntp = readdir(dirp));
-		else{
-	    	    perror("readdir1 failed");
-	    	}
-	        if(direntp = readdir(dirp)){
-	    	}else{
-	    	    perror("readdir2 failed");
-	    	}
-            }
-	    errno = 0;
-    	    while((direntp = readdir(dirp))){
-	    	vout.push_back(direntp->d_name);
-    	    }
-    	    if(errno != 0){
-	    	perror("readdir failed");
-	        //FIXME - Does this need to exit/return -1?
-    	    }
-    	    //Closes directory
-    	    if(closedir(dirp) == -1){
-            	perror("closedir error"); 
-    	    }
-
-	    //Outputs vout
-	    for(unsigned j = 0; j < vout.size(); j++){
-		cout << vout.at(j) << "  ";
-	    }
-	    cout << endl;
-	    if(i != (vout.size() - 1)){
-	    	cout <<  endl;
-	    }
-	    //Clears vout for next dir
-	    while(vout.size() > 0){
-		vout.pop_back();
-	    }
-	    
-
-	}
-
+	dirOutput(dirName, vout, flags);
     //---Both passed---
     }else{
 	
     }
-
-    //FIXME - Sort vout, then output it
 
     return 0;
 } 
@@ -215,7 +225,7 @@ int main(int argc, char** argv){
     }
     //FIXME - Remove later
     //cout << "Ns: " << ns << "\nFlags: " << flags << endl;
-    output(ns, flags, dirName, fileName);
+    outputHandler(ns, flags, dirName, fileName);
 
     return 0;
 }

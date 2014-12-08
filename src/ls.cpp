@@ -22,7 +22,7 @@ using namespace std;
 
 int flagCheck(int &argc, char** &argv){
     int flags = 0;
-    for(unsigned i = 0; i < argc; i++){
+    for(unsigned i = 1; i < argc; i++){
 	if(argv[i][0] == '-'){
 	    for(int j = 1; argv[i][j] != 0; j++){
 		if(argv[i][j] == 'a'){
@@ -41,7 +41,7 @@ int flagCheck(int &argc, char** &argv){
 //1 = files passed, 2 = dirs passed, 3 = both passed, 0 = none passed, -1 = error
 int nameSort(int argc, char** argv, vector<string> &dirName, vector<string> &fileName){
     struct stat sb;
-    for(unsigned i = 0; i < argc; i++){
+    for(unsigned i = 1; i < argc; i++){
 	if(lstat(argv[i], &sb) == -1){
 	    perror("lstat() failed");
 	    return -1;
@@ -72,42 +72,133 @@ int nameSort(int argc, char** argv, vector<string> &dirName, vector<string> &fil
 int output(int ns, int flags, vector<string> dirName, vector<string> fileName){
     string currDir = "";
     string currFile = "";
+    vector<string> vout; //holds files to be output
     DIR *dirp;
     dirent *direntp;
 
-    //No files passed
+    //---No files passed---
     if(ns == 0){
 	currDir = ".";
 	currFile = "";
-	
-	if((dirp = opendir(dirName)));
+	if((dirp = opendir(currDir.c_str())));
     	else{
 	    perror("opendir failed");
 	    return -1;
     	}
-
 	//Skips . and .. if -a not passed
     	if((flags == 0) || (flags == 2) || (flags == 4)){
-	    if(direntp = readdir(dirp)){
-	    }else{
+	    if(direntp = readdir(dirp));
+	    else{
 	    	perror("readdir1 failed");
 	    }
-	    if(direntp = readdir(dirp)){
-	    }else{
+	    if(direntp = readdir(dirp));
+	    else{
 	    	perror("readdir2 failed");
 	    }
         }
+	errno = 0;
+    	while((direntp = readdir(dirp))){
+	    vout.push_back(direntp->d_name);
+    	}
+    	if(errno != 0){
+	    perror("readdir3 failed");
+	    //FIXME - Does this need to exit/return -1?
+    	}
+    	//Closes directory
+    	if(closedir(dirp) == -1){
+            perror("closedir failed"); 
+    	}
 
-    //Only files
+    //---Only files---
     }else if(ns == 1){
-	currFile = fileName.at(0);
-    //Only dirs
+	//FIXME - How to handle paths to filenames?
+	//Note: ls -a doesn't matter for passed in files
+
+	currDir = ".";
+	currFile = "";	
+	if(dirp = opendir(currDir.c_str()));
+	else{
+	    perror("opendir failed");
+	    return -1;
+	}
+	errno = 0;
+	while(direntp = readdir(dirp)){
+	    currFile = direntp->d_name;
+	    for(unsigned i = 0; i < fileName.size(); i++){
+		//If currFile matches a file in the vector
+		if(fileName.at(i) == currFile){
+	   	    vout.push_back(currFile);
+		}
+	    }
+	}
+	if(errno != 0){
+	    perror("readdir failed");
+	   //FIXME - Do these need to exit/return -1?
+	}
+	if(closedir(dirp) == -1){
+	    perror("closedir failed");
+	}
+    //---Only dirs---
     }else if(ns == 2){
-	
-    //Both passed
+	//Then outputs each dir:
+	//  <then all files listed here>
+	sort(dirName.begin(), dirName.end());
+	for(unsigned i = 0; i < dirName.size(); i++){
+	    cout << dirName.at(i) << ":" << endl;
+	    currDir = dirName.at(i);
+
+	    if((dirp = opendir(currDir.c_str())));
+    	    else{
+	    	perror("opendir failed");
+	    	return -1;
+    	    }
+	    //Skips . and .. if -a not passed
+    	    if((flags == 0) || (flags == 2) || (flags == 4)){
+	    	if(direntp = readdir(dirp));
+		else{
+	    	    perror("readdir1 failed");
+	    	}
+	        if(direntp = readdir(dirp)){
+	    	}else{
+	    	    perror("readdir2 failed");
+	    	}
+            }
+	    errno = 0;
+    	    while((direntp = readdir(dirp))){
+	    	vout.push_back(direntp->d_name);
+    	    }
+    	    if(errno != 0){
+	    	perror("readdir failed");
+	        //FIXME - Does this need to exit/return -1?
+    	    }
+    	    //Closes directory
+    	    if(closedir(dirp) == -1){
+            	perror("closedir error"); 
+    	    }
+
+	    //Outputs vout
+	    for(unsigned j = 0; j < vout.size(); j++){
+		cout << vout.at(j) << "  ";
+	    }
+	    cout << endl;
+	    if(i != (vout.size() - 1)){
+	    	cout <<  endl;
+	    }
+	    //Clears vout for next dir
+	    while(vout.size() > 0){
+		vout.pop_back();
+	    }
+	    
+
+	}
+
+    //---Both passed---
     }else{
 	
     }
+
+    //FIXME - Sort vout, then output it
+
     return 0;
 } 
 
@@ -122,8 +213,9 @@ int main(int argc, char** argv){
 	cout << "nameSort error" << endl;
 	exit(1);
     }
-
-    output(ns, flags dirName, fileName);
+    //FIXME - Remove later
+    //cout << "Ns: " << ns << "\nFlags: " << flags << endl;
+    output(ns, flags, dirName, fileName);
 
     return 0;
 }

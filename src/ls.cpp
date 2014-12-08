@@ -42,16 +42,18 @@ int flagCheck(int &argc, char** &argv){
 int nameSort(int argc, char** argv, vector<string> &dirName, vector<string> &fileName){
     struct stat sb;
     for(unsigned i = 1; i < argc; i++){
-	if(lstat(argv[i], &sb) == -1){
-	    perror("lstat() failed");
-	    return -1;
-	}
 	//Do nothing, is flag
 	if(argv[i][0] == '-');
-	else if(S_ISDIR(sb.st_mode)){
-	    dirName.push_back(argv[i]);
-	}else{
-	    fileName.push_back(argv[i]);
+	else{
+	    if(lstat(argv[i], &sb) == -1){
+		perror("lstat() failed");
+		return -1;
+	    }
+	    if(S_ISDIR(sb.st_mode)){
+	    	dirName.push_back(argv[i]);
+	    }else{
+	    	fileName.push_back(argv[i]);
+	    }
 	}
     }
     //Nothing passed
@@ -71,34 +73,26 @@ int nameSort(int argc, char** argv, vector<string> &dirName, vector<string> &fil
 
 int printAll(string currFile, string dirName){
     struct stat statbuf;
-    //File type check
-    if(lstat(currFile.c_str(), &statbuf) == -1){
-	perror("lstat() failed");
+    //Appends ./ and prepends / to dirName
+    string str = "./";
+    str.append(dirName);
+    str.append("/");
+    str.append(currFile);
+
+    if(lstat(str.c_str(), &statbuf) == -1){//Sets statbuf
+	perror("printAll lstat() failed");
 	exit(1);
     }
+
+    //File type check
     if(S_ISLNK(statbuf.st_mode)){
 	cout << "l";
     }else if(S_ISDIR(statbuf.st_mode)){
 	cout << "d";
     }else{
 	cout << "-";
-    }    
-
-    //FIXME - Use dirName.at().size() + currFile.size() + 1?
-    //		when they're vectors
-    //Appends ./ and prepends / to dirName
-    //FIXME - This size array is wrong
-    char str[sizeof(dirName) + sizeof(currFile) + 128];
-    strcpy(str, "./");
-    strcat(str, dirName.c_str());
-    strcat(str, "/");
-    string str1 = currFile;
-    strcat(str, str1.c_str()); 
-
-    if(lstat(str, &statbuf) == -1){//Sets statbuf
-	perror("lstat() failed");
-	exit(1);
     }
+
     //Owner permissions
     if(statbuf.st_mode & S_IRUSR){
 	cout << "r";
@@ -203,7 +197,7 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
 	    return -1;
     	}
 	//Skips . and .. if -a not passed
-    	if((flags == 0) || (flags == 2) || (flags == 4)){
+    	if((flags == 0) || (flags == 2) || (flags == 4) || (flags == 6)){
 	    if(direntp = readdir(dirp));
 	    else{
 	        perror("readdir1 failed");
@@ -230,10 +224,24 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
     	}
 	//Outputs vout
 	sort(vout.begin(), vout.end());
-	for(unsigned j = 0; j < vout.size(); j++){
-	    cout << vout.at(j) << "  ";
+	//If -l was passed
+        if((flags == 2) || (flags == 3) || (flags == 6) || (flags == 7)){
+	    struct stat sb;
+	    if(lstat(currDir.c_str(), &sb) == -1){
+		perror("lstat failed");
+		return -1;
+	    }
+	    //FIXME - Incorrect total being displayed
+	    cout << "Total " << sb.st_blocks << endl;
+	    for(unsigned j = 0; j < vout.size(); j++){
+	    	printAll(vout.at(j), currDir);
+	    }
+	}else{
+	    for(unsigned j = 0; j < vout.size(); j++){
+	    	cout << vout.at(j) << "  ";
+	    }
+	    cout << "\n" << endl;
 	}
-	cout << "\n" << endl;
 	//Clears vout for next dir
 	while(vout.size() > 0){
 	    vout.pop_back();
@@ -271,11 +279,20 @@ int fileOutput(vector<string> &fileName, vector<string> &vout, int flags){
         perror("closedir failed");
 	return -1;
     }
+    //Outputs file in vout
     sort(vout.begin(), vout.end());
-    for(unsigned i = 0; i < vout.size(); i++){
-        cout << vout.at(i) << " ";
+    //If -l flag was passed
+    if((flags == 2) || (flags == 3) || (flags == 6) || (flags == 7)){
+	for(unsigned i = 0; i < vout.size(); i++){
+	    printAll(vout.at(i), currDir);
+	}
+    //No -l flag
+    }else{
+    	for(unsigned i = 0; i < vout.size(); i++){
+            cout << vout.at(i) << " ";
+    	}
+        cout << endl;
     }
-    cout << endl;
     return 0;
 }
 
@@ -290,7 +307,7 @@ int noOutput(vector<string> &vout, int flags){
 	return -1;
     }
     //Skips . and .. if -a not passed
-    if((flags == 0) || (flags == 2) || (flags == 4)){
+    if((flags == 0) || (flags == 2) || (flags == 4) || (flags == 6)){
         if(direntp = readdir(dirp));
 	else{
 	    perror("readdir1 failed");
@@ -313,12 +330,21 @@ int noOutput(vector<string> &vout, int flags){
         perror("closedir failed"); 
 	return -1;
     }
+    //Outputs files
     sort(vout.begin(), vout.end());
-    for(unsigned i = 0; i < vout.size(); i++){
-	cout << vout.at(i) << "  ";
+    //If -l is set
+    if((flags == 2) || (flags == 3) || (flags == 6) || (flags == 7)){
+	for(unsigned i = 0; i < vout.size(); i++){
+	    //int printAll(string currFile, string dirName)
+	    printAll(vout.at(i), currDir);
+	}
+    //If not long list
+    }else{
+	for(unsigned i = 0; i < vout.size(); i++){
+	    cout << vout.at(i) << "  ";
+        }
+        cout << endl;
     }
-    cout << endl;
-
     return 0;
 }
 

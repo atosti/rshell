@@ -232,7 +232,7 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
 		return -1;
 	    }
 	    //FIXME - Incorrect total being displayed
-	    cout << "Total " << sb.st_blocks << endl;
+	    cout << "Total " << ((sb.st_blksize)/(sb.st_size)) << endl;
 	    for(unsigned j = 0; j < vout.size(); j++){
 	    	printAll(vout.at(j), currDir);
 	    }
@@ -293,6 +293,10 @@ int fileOutput(vector<string> &fileName, vector<string> &vout, int flags){
     	}
         cout << endl;
     }
+    //Clears vout for next dir
+    while(vout.size() > 0){
+        vout.pop_back();
+    }
     return 0;
 }
 
@@ -345,6 +349,11 @@ int noOutput(vector<string> &vout, int flags){
         }
         cout << endl;
     }
+    //Clears vout for next dir
+    while(vout.size() > 0){
+        vout.pop_back();
+    }
+
     return 0;
 }
 

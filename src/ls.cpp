@@ -87,10 +87,12 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
 	    if(direntp = readdir(dirp));
 	    else{
 	        perror("readdir1 failed");
+		return -1;
 	    }
 	    if(direntp = readdir(dirp)){
 	    }else{
 	        perror("readdir2 failed");
+		return -1;
 	    }
         }
 	errno = 0;
@@ -99,13 +101,15 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
     	}
     	if(errno != 0){
 	    perror("readdir failed");
-	    //FIXME - Does this need to exit/return -1?
+	    return -1;
     	}
     	//Closes directory
     	if(closedir(dirp) == -1){
             perror("closedir error"); 
+	    return -1;
     	}
 	//Outputs vout
+	sort(vout.begin(), vout.end());
 	for(unsigned j = 0; j < vout.size(); j++){
 	    cout << vout.at(j) << "  ";
 	}
@@ -141,10 +145,11 @@ int fileOutput(vector<string> &fileName, vector<string> &vout, int flags){
     }
     if(errno != 0){
         perror("readdir failed");
-	//FIXME - Do these need to exit/return -1?
+	return -1;
     }
     if(closedir(dirp) == -1){
         perror("closedir failed");
+	return -1;
     }
     sort(vout.begin(), vout.end());
     for(unsigned i = 0; i < vout.size(); i++){
@@ -154,7 +159,7 @@ int fileOutput(vector<string> &fileName, vector<string> &vout, int flags){
     return 0;
 }
 
-int noOutput(vector<string> vout, int flags){
+int noOutput(vector<string> &vout, int flags){
     DIR *dirp;
     dirent *direntp;
     string currDir = ".";
@@ -181,12 +186,19 @@ int noOutput(vector<string> vout, int flags){
     }
     if(errno != 0){
 	perror("readdir3 failed");
-	//FIXME - Does this need to exit/return -1?
+	return -1;
     }
     //Closes directory
     if(closedir(dirp) == -1){
         perror("closedir failed"); 
+	return -1;
     }
+    sort(vout.begin(), vout.end());
+    for(unsigned i = 0; i < vout.size(); i++){
+	cout << vout.at(i) << "  ";
+    }
+    cout << endl;
+
     return 0;
 }
 
@@ -197,18 +209,33 @@ int outputHandler(int ns, int flags, vector<string> dirName, vector<string> file
 
     //---No files passed---
     if(ns == 0){
-	noOutput(vout, flags);
+	if(noOutput(vout, flags) == -1){
+	    cout << "noOutput failed" << endl;
+	    return -1;
+	}
     //---Only files---
     }else if(ns == 1){
-	fileOutput(fileName, vout, flags);
+	if(fileOutput(fileName, vout, flags) == -1){
+	    cout << "fileOutput failed" << endl;
+	    return -1;
+	}
     //---Only dirs---
     }else if(ns == 2){
-	dirOutput(dirName, vout, flags);
+	if(dirOutput(dirName, vout, flags) == -1){
+	    cout << "dirOutput failed" << endl;
+	    return -1;
+	}
     //---Both passed---
     }else{
-	
+	if(fileOutput(fileName, vout, flags) == -1){
+	    cout << "fileOutput failed" << endl;
+	    return -1;
+	}
+	if(dirOutput(dirName, vout, flags) == -1){
+	    cout << "dirOutput failed" << endl;
+	    return -1;
+	}
     }
-
     return 0;
 } 
 
@@ -220,12 +247,13 @@ int main(int argc, char** argv){
     int ns = nameSort(argc, argv, dirName, fileName);
     //Exit on ns error
     if(ns == -1){
-	cout << "nameSort error" << endl;
+	cout << "nameSort failed" << endl;
 	exit(1);
     }
-    //FIXME - Remove later
-    //cout << "Ns: " << ns << "\nFlags: " << flags << endl;
-    outputHandler(ns, flags, dirName, fileName);
+    if(outputHandler(ns, flags, dirName, fileName) == -1){
+	cout << "outputHandler failed" << endl;
+	exit(1);
+    }
 
     return 0;
 }

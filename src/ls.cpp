@@ -176,7 +176,21 @@ int printAll(string currFile, string dirName){
 	perror("st_mtime failed");
 	exit(1);
     }
-    cout << currFile << endl;
+    //File coloring
+    if((currFile.at(0) == '.')){
+        //Grey for hidden files
+        cout << "\033[0;47m";
+    }
+    if((S_ISDIR(statbuf.st_mode)) || (currFile == ".") || (currFile == "..")){
+        //Blue for dirs
+        cout << "\e[34m";
+    }
+    if(((statbuf.st_mode & S_IEXEC) != 0) && (!S_ISDIR(statbuf.st_mode))){
+        //Green for executables
+        cout << "\e[32m";
+    }
+    //Resets colors
+    cout << currFile << "\e[0m" << endl;
 
     return 0;
 }
@@ -313,8 +327,33 @@ int fileOutput(vector<string> &fileName, vector<string> &vout, int flags){
 	}
     //No -l flag
     }else{
-    	for(unsigned i = 0; i < vout.size(); i++){
-            cout << vout.at(i) << " ";
+	string str = "";
+	struct stat sb;
+	for(unsigned i = 0; i < vout.size(); i++){
+	    str = "./";
+	    str.append(currDir);
+    	    str.append("/");
+    	    str.append(vout.at(i));
+
+	    if(lstat(str.c_str(), &sb)){
+	        perror("lstat failed");
+		return -1;
+	    }
+	    //File coloring
+	    if((vout.at(i).at(0) == '.')){
+	        //Grey for hidden files
+	        cout << "\033[0;47m";
+	    }
+	    if((S_ISDIR(sb.st_mode)) || (vout.at(i) == ".") || (vout.at(i) == "..")){
+	        //Blue for dirs
+	        cout << "\e[34m";
+	    }
+	    if(((sb.st_mode & S_IEXEC) != 0) && (!S_ISDIR(sb.st_mode))){
+	        //Green for executables
+	        cout << "\e[32m";
+	    }
+	    //Resets colors
+	    cout << vout.at(i) << "\e[0m  ";
     	}
         cout << endl;
     }
@@ -369,9 +408,34 @@ int noOutput(vector<string> &vout, int flags){
 	}
     //If not long list
     }else{
+	string str = "";
+	struct stat sb;
 	for(unsigned i = 0; i < vout.size(); i++){
-	    cout << vout.at(i) << "  ";
-        }
+	    str = "./";
+	    str.append(currDir);
+    	    str.append("/");
+    	    str.append(vout.at(i));
+
+	    if(lstat(str.c_str(), &sb)){
+	        perror("lstat failed");
+		return -1;
+	    }
+	    //File coloring
+	    if((vout.at(i).at(0) == '.')){
+	        //Grey for hidden files
+	        cout << "\033[0;47m";
+	    }
+	    if((S_ISDIR(sb.st_mode)) || (vout.at(i) == ".") || (vout.at(i) == "..")){
+	        //Blue for dirs
+	        cout << "\e[34m";
+	    }
+	    if(((sb.st_mode & S_IEXEC) != 0) && (!S_ISDIR(sb.st_mode))){
+	        //Green for executables
+	        cout << "\e[32m";
+	    }
+	    //Resets colors
+	    cout << vout.at(i) << "\e[0m  ";
+    	}
         cout << endl;
     }
     //Clears vout for next dir

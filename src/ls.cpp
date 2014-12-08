@@ -69,6 +69,126 @@ int nameSort(int argc, char** argv, vector<string> &dirName, vector<string> &fil
     }
 }
 
+int printAll(string currFile, string dirName){
+    struct stat statbuf;
+    //File type check
+    if(lstat(currFile.c_str(), &statbuf) == -1){
+	perror("lstat() failed");
+	exit(1);
+    }
+    if(S_ISLNK(statbuf.st_mode)){
+	cout << "l";
+    }else if(S_ISDIR(statbuf.st_mode)){
+	cout << "d";
+    }else{
+	cout << "-";
+    }    
+
+    //FIXME - Use dirName.at().size() + currFile.size() + 1?
+    //		when they're vectors
+    //Appends ./ and prepends / to dirName
+    //FIXME - This size array is wrong
+    char str[sizeof(dirName) + sizeof(currFile) + 128];
+    strcpy(str, "./");
+    strcat(str, dirName.c_str());
+    strcat(str, "/");
+    string str1 = currFile;
+    strcat(str, str1.c_str()); 
+
+    if(lstat(str, &statbuf) == -1){//Sets statbuf
+	perror("lstat() failed");
+	exit(1);
+    }
+    //Owner permissions
+    if(statbuf.st_mode & S_IRUSR){
+	cout << "r";
+    }else{
+	cout << "-";
+    }
+    if(statbuf.st_mode & S_IWUSR){
+	cout << "w";
+    }else{
+        cout << "-";
+    }
+    if(statbuf.st_mode & S_IXUSR){
+	cout << "x";
+    }else{
+        cout << "-";
+    }
+    //Group permissions
+    if(statbuf.st_mode & S_IRGRP){
+	cout << "r";
+    }else{
+	cout << "-";
+    }
+    if(statbuf.st_mode & S_IWGRP){
+	cout << "w";
+    }else{
+	cout << "-";
+    }
+    if(statbuf.st_mode & S_IXGRP){
+	cout << "x";
+    }else{
+	cout << "-";
+    }
+    //Other permissions
+    if(statbuf.st_mode & S_IROTH){
+	cout << "r";
+    }else{
+        cout << "-";
+    }
+    if(statbuf.st_mode & S_IWOTH){
+	cout << "w";
+    }else{
+        cout << "-";
+    }
+    if(statbuf.st_mode & S_IXOTH){
+	cout << "x";
+    }else{
+        cout << "-";
+    }
+    //Num of system links
+    int num = 0;
+    if(num = statbuf.st_nlink){
+	cout << " " << num << " ";
+    }else{
+	perror("st_nlink error");
+	exit(1);
+    }
+    //User ID
+    struct passwd *pwd;
+    if((pwd = getpwuid(statbuf.st_uid)) != NULL){
+	cout << pwd->pw_name << " ";
+    }else{
+	perror("getpwuid failed");
+	exit(1);
+    }
+    //Group ID
+    struct group *grp;
+    if((grp = getgrgid(statbuf.st_gid)) != NULL){
+	cout << grp->gr_name << " ";
+    }else{
+	perror("getgrgid failed");
+	exit(1);
+    }
+    //File size in bytes and Time of last mod.
+    cout << statbuf.st_size << " ";
+    if(num = statbuf.st_mtime){
+	time_t rawtime = statbuf.st_mtime;
+	char buffer [80];
+        struct tm *timeinfo;
+	timeinfo = localtime(&rawtime);
+	strftime(buffer, 80, "%b %e %H:%M", timeinfo);
+	cout << buffer << " ";
+    }else{
+	perror("st_mtime failed");
+	exit(1);
+    }
+    cout << currFile << endl;
+
+    return 0;
+}
+
 int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
     string currDir = "";
     DIR *dirp;

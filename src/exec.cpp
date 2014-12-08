@@ -16,18 +16,8 @@ void quit(){
     cout << "Exiting..." << endl;
     exit(0);
 }
-/*
-void cd(){
-    //If no params passed, change to HOME
-    if(chdir(getenv("HOME")) == -1){
-	perror("chdir failed");
-	exit(1);
-    }
-    char buf[BUFSIZ];
-    cout << "CWD: " << getcwd(buf, sizeof(buf)) << endl;
-}
-*/
 
+/*
 void redirect(char* argv[], int num, bool &runExec){//consider making a bool to check if any operators are found
     int x = 0;
     int y = 0;
@@ -209,11 +199,11 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 	    }
 
 	    //Open pipes
-	    /*
-	    if(execvp(argv[last+1], argv) == -1){
-		perror("execvp pipe");
-		exit(1);
-	    }*/
+	    
+	    //if(execvp(argv[last+1], argv) == -1){
+		//perror("execvp pipe");
+		//exit(1);
+	    //}
 
 	    //Create temp file, write execvp of last +1 to it, then
 	    //open that file in fdpc[1]
@@ -222,10 +212,10 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 		perror("fdpc[1] open");
 		exit(1);
 	    }
-	    /*if(fdcp[0] = open(argv[last - 1], O_RDONLY) == -1){
-		perror("fdcp[0] open");
-		exit(1);
-	    }*/
+	    //if(fdcp[0] = open(argv[last - 1], O_RDONLY) == -1){
+		//perror("fdcp[0] open");
+		//exit(1);
+	    //}
 
 	    //redirect input to child
 	    if(close(fdpc[1]) == -1){ //close out
@@ -261,6 +251,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
     return;
 
 }
+*/
 
 //Globals for use in sig handler
 int pid = 0;
@@ -277,6 +268,31 @@ void sig(int signum){
     }
 }
 
+int outputLogin(){
+    
+    char buf[BUFSIZ];
+    char *login;
+    if((login = getlogin()) == NULL){
+	perror("getlogin failed");
+	return -1;
+    }
+    for(unsigned i = 0; login[i] != '\0'; i++){
+	cout << login[i];
+    }
+    cout << "@";
+    if(gethostname(login, 128) == -1){ //Should hostname be smaller?
+	perror("gethostname failed");
+	return -1;
+    }
+    for(unsigned i = 0; login[i] != '\0'; i++){
+	cout << login[i];
+    }
+    //Note: getcwd() causes "still reachable" mem leaks
+    cout << ":" << getcwd(buf, sizeof(buf)) << " $ ";
+
+    return 0;
+}
+
 int main(int argc, char* argv[]){
     signal(SIGINT, sig);
     pidParent = getpid();
@@ -287,29 +303,13 @@ int main(int argc, char* argv[]){
     //Creates a map for non-exec commands
     map<string, void (*)()> commands;
     commands["exit"] = quit;
-    //commands["cd"] = cd;
 
     while(1){
 	//Prints login/hostname prompt
-	char buf[BUFSIZ];
-	char *login;
-	if((login = getlogin()) == NULL){
-	    perror("getlogin failed");
-	    exit(1);
+	if(outputLogin() == -1){
+	    cout << "outputLogin failed" << endl;
+	    return -1;
 	}
-	for(unsigned i = 0; login[i] != '\0'; i++){
-	    cout << login[i];
-	}
-	cout << "@";
-	if(gethostname(login, 128) == -1){ //Should hostname be smaller?
-	    perror("gethostname failed");
-	    exit(1);
-	}
-	for(unsigned i = 0; login[i] != '\0'; i++){
-	    cout << login[i];
-	}
-	//Note: getcwd() causes "still reachable" mem leaks
-	cout << ":" << getcwd(buf, sizeof(buf)) << " $ ";
 
 	//Handles input
 	getline(cin, usrInput);
@@ -461,15 +461,16 @@ int main(int argc, char* argv[]){
 		perror("pid failed");
 		exit(1);
 	    }else if(pid == 0){//Child process 
-	        int num = 0;
+	        int numArg = 0;
 		bool runExec = true;
-		//Counts # of args in argv
-	    	while(argv[num] != NULL){
-		    num++;
-	        }
-	        redirect(argv, num, runExec); //i/o redirection
 
-		//Second fork
+		//Counts # of args in argv
+	    	while(argv[numArg] != NULL){
+		    numArg++;
+	        }
+	        //redirect(argv, numArg, runExec); //i/o redirection
+
+		//Second fork - FIXME -Why?
 	        pid2 = fork();
 	        if(pid2 == -1){
 		    perror("pid fork failed");
@@ -478,35 +479,34 @@ int main(int argc, char* argv[]){
 		//Child process
 	  	if(pid2 == 0){
 		    //Stores PATH in a char*
-		    //char *path = getenv("PATH");
 		    if(path == NULL){
 			cout << "Error: PATH is null" << endl;
 			exit(1);
 		    }
 
 		    //Counts length of PATH
+		    int pCnt = 0;
 		    char *temp = path;
-		    int cnt2 = 0;
-		    for(; temp[cnt2] != '\0'; cnt2++);
+		    for(; temp[pCnt] != '\0'; pCnt++);
 
 		    //Creates an array of pathes for execv
 		    char *token2 = strtok(path, ":");
-		    char *arr[cnt2 + 1];
-		    int cnt3 = 0; //Num of paths
+		    char *pArr[pCnt + 1];
+		    int pNum = 0; //Num of paths
 
 	    	    while(token2 != NULL){
-	    	   	arr[cnt3] = token2;
+	    	   	pArr[pNum] = token2;
 	    	    	token2 = strtok(NULL, ":");
-	    	    	cnt3++;
+	    	    	pNum++;
 	            }
-	            strcat(arr[cnt3-1], "\0");
-	            arr[cnt3] = token2; //Null terms array
+	            strcat(pArr[pNum-1], "\0");
+	            pArr[pNum] = token2; //Null terms array
 		
 		    //Appends "/cmd" to the paths and stores them in vector
 		    string str;
 		    vector<string> vc; 
-		    for(unsigned q = 0; q < cnt3; q++){
-			str = arr[q];
+		    for(unsigned q = 0; q < pNum; q++){
+			str = pArr[q];
 			str.append("/");
 			str.append(argv[0]);
 			vc.push_back(str);
@@ -516,7 +516,7 @@ int main(int argc, char* argv[]){
 			exit(1);
 		    }else{
 			//Searches each path for cmd
-			for(unsigned x = 0; x < cnt3; x++){
+			for(unsigned x = 0; x < pNum; x++){
 			    execv(vc.at(x).c_str(), argv);
 			}
 			perror("execv failed");

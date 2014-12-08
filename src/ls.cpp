@@ -20,6 +20,114 @@ using namespace std;
 #define FLAG_l 2
 #define FLAG_R 4
 
+int flagCheck(int &argc, char** &argv){
+    int flags = 0;
+    for(unsigned i = 0; i < argc; i++){
+	if(argv[i][0] == '-'){
+	    for(int j = 1; argv[i][j] != 0; j++){
+		if(argv[i][j] == 'a'){
+		    flags |= FLAG_a;
+	        }else if(argv[i][j] == 'l'){
+		    flags |= FLAG_l;
+	        }else if(argv[i][j] == 'R'){
+		    flags |= FLAG_R;
+	        }
+	    }
+        }
+    }
+    return flags;
+}
+
+//1 = files passed, 2 = dirs passed, 3 = both passed, 0 = none passed, -1 = error
+int nameSort(int argc, char** argv, vector<string> &dirName, vector<string> &fileName){
+    struct stat sb;
+    for(unsigned i = 0; i < argc; i++){
+	if(lstat(argv[i], &sb) == -1){
+	    perror("lstat() failed");
+	    return -1;
+	}
+	//Do nothing, is flag
+	if(argv[i][0] == '-');
+	else if(S_ISDIR(sb.st_mode)){
+	    dirName.push_back(argv[i]);
+	}else{
+	    fileName.push_back(argv[i]);
+	}
+    }
+    //Nothing passed
+    if((fileName.size() == 0) && (dirName.size() == 0)){
+	return 0;
+    //Only files passed
+    }else if((fileName.size() > 0) && (dirName.size() == 0)){
+	return 1; 
+    //Only dirs passed
+    }else if((fileName.size() == 0) && (dirName.size() > 0)){
+	return 2;
+    //Both dirs and files passed
+    }else{
+	return 3;
+    }
+}
+
+int output(int ns, int flags, vector<string> dirName, vector<string> fileName){
+    string currDir = "";
+    string currFile = "";
+    DIR *dirp;
+    dirent *direntp;
+
+    //No files passed
+    if(ns == 0){
+	currDir = ".";
+	currFile = "";
+	
+	if((dirp = opendir(dirName)));
+    	else{
+	    perror("opendir failed");
+	    return -1;
+    	}
+
+	//Skips . and .. if -a not passed
+    	if((flags == 0) || (flags == 2) || (flags == 4)){
+	    if(direntp = readdir(dirp)){
+	    }else{
+	    	perror("readdir1 failed");
+	    }
+	    if(direntp = readdir(dirp)){
+	    }else{
+	    	perror("readdir2 failed");
+	    }
+        }
+
+    //Only files
+    }else if(ns == 1){
+	currFile = fileName.at(0);
+    //Only dirs
+    }else if(ns == 2){
+	
+    //Both passed
+    }else{
+	
+    }
+    return 0;
+} 
+
+int main(int argc, char** argv){
+    int flags = flagCheck(argc, argv);
+    vector<string> dirName;
+    vector<string> fileName;
+
+    int ns = nameSort(argc, argv, dirName, fileName);
+    //Exit on ns error
+    if(ns == -1){
+	cout << "nameSort error" << endl;
+	exit(1);
+    }
+
+    output(ns, flags dirName, fileName);
+
+    return 0;
+}
+
 //TODO:
 //Format the output left to right in columns
 //Sort output alphabetically case insensitive
@@ -32,6 +140,7 @@ using namespace std;
 //or bin/ls <FILES/DIR> <FLAGS> "bin/ls test.cpp -l"
 
 //Handles -l output
+/*
 int printAll(string currFile, struct stat statbuf, const char* dirName){
     //File type check
     if(lstat(currFile.c_str(), &statbuf) == -1){
@@ -283,3 +392,4 @@ int main(int argc, char** argv){
     }
     return 0;
 }
+*/

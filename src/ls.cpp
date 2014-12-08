@@ -47,7 +47,6 @@ int nameSort(int argc, char** argv, vector<string> &dirName, vector<string> &fil
 	else{
 	    if(lstat(argv[i], &sb) == -1){
 		perror("lstat() failed");
-		return -1;
 	    }
 	    if(S_ISDIR(sb.st_mode)){
 	    	dirName.push_back(argv[i]);
@@ -188,6 +187,7 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
     dirent *direntp;
     sort(dirName.begin(), dirName.end());
     for(unsigned i = 0; i < dirName.size(); i++){
+	//When mult dirs passed, output each one's name
 	if(dirName.size() > 1){
 	    cout << dirName.at(i) << ":" << endl;
 	}
@@ -225,9 +225,9 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
     	}
 	//Outputs vout
 	sort(vout.begin(), vout.end());
+	struct stat sb;
 	//If -l was passed
         if((flags == 2) || (flags == 3) || (flags == 6) || (flags == 7)){
-	    struct stat sb;
 	    if(lstat(currDir.c_str(), &sb) == -1){
 		perror("lstat failed");
 		return -1;
@@ -238,8 +238,32 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
 	    	printAll(vout.at(j), currDir);
 	    }
 	}else{
+	    string str = "";
 	    for(unsigned j = 0; j < vout.size(); j++){
-	    	cout << vout.at(j) << "  ";
+		str = "./";
+	    	str.append(currDir);
+    	    	str.append("/");
+    	    	str.append(vout.at(j));
+
+		if(lstat(str.c_str(), &sb)){
+		    perror("lstat failed");
+		    return -1;
+		}
+		//File coloring
+		if((vout.at(j).at(0) == '.')){
+		    //Grey for hidden files
+		    cout << "\033[0;47m";
+		}
+		if((S_ISDIR(sb.st_mode)) || (vout.at(j) == ".") || (vout.at(j) == "..")){
+		    //Blue for dirs
+		    cout << "\e[34m";
+		}
+		if(((sb.st_mode & S_IEXEC) != 0) && (!S_ISDIR(sb.st_mode))){
+		    //Green for executables
+		    cout << "\e[32m";
+		}
+		//Resets colors
+		cout << vout.at(j) << "\e[0m  ";
 	    }
 	    cout << "\n" << endl;
 	}

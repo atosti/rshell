@@ -17,8 +17,94 @@ void quit(){
     exit(0);
 }
 
+int fdOutput(char** &argv, int len, int loc){
+    //No first arg
+    if(loc-1 < 0){
+	cerr << "Fdoutput error, no LHS arg" << endl;
+	return -1;
+    //No second arg
+    }else if(argv[loc+1] == NULL){
+	cerr << "Fdoutput error, no RHS arg" << endl;
+	return -1;
+    }
+    string str = "./";
+    str.append(argv[loc+1]);
+    str.append("/");
+
+    int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd == -1){
+    	perror("open Fdoutput");
+	exit(1);
+    }
+    //Closes stdout
+    if(close(STDOUT_FILENO) == -1){
+	perror("close Fdoutput");
+	exit(1);
+    }
+    //Fd now in stdout slot
+    if(dup2(argv[loc][0], STDOUT_FILENO) == -1){
+	perror("dup2 Fdoutput");
+	exit(1);
+    }
+    //FIXME put into a loop and remove proper pieces
+    //Seems to work - Test later
+    for(unsigned i = loc; i != len; i++){
+	argv[i] = argv[len]; 
+    }
+    return 0;
+}
+
 //FIXME - Implement piping
-int pipe(char** argv, int len, int loc){
+int pipe(char** &argv, int len, int loc){
+    int fd[2];
+    //Note:
+    //fd[0] = Read end
+    //fd[1] = Write end
+
+    if(pipe(fd) == -1){
+	perror("pipe failed");
+	return -1;
+    }
+    //LHS of pipe cmd
+    if(close(fd[0]) == -1){
+	perror("close stdout");
+	return -1;
+    }
+    if(dup2(fd[1], 1) == -1){
+	perror("dup2 stdout");
+	return -1;
+    }
+
+    //RHS of pipe cmd
+    int pid = fork();
+    if(pid == -1){
+	perror("pipe fork");
+	return -1;
+    //Child
+    }else if(pid == 0){
+	if(close(fd[1]) == -1){
+	    perror("close stdin");
+	    return -1;
+	}
+	if(dup2(fd[0], 0) == -1){
+	    perror("dup2 stdin");
+	    return -1;
+	}
+	//FIXME - Does this go here?
+	//Remove the other parths of argv
+	if(execvp(argv[0], argv) == -1){
+	    perror("pipe execvp");
+	    return -1;
+	}
+	exit(0);
+    //Parent
+    }else{
+	if(wait(0) == -1){
+	    perror("wait failed");
+	    return -1;
+	}
+    }
+
     return 0;
 }
 
@@ -103,7 +189,7 @@ int output(char** &argv, int len, int loc){
     return 0;
 }
 
-//FIXME - Broken now!
+//FIXME - Only works on single file passed in
 int append(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
@@ -138,15 +224,11 @@ int append(char** &argv, int len, int loc){
     for(unsigned i = loc; i != len; i++){
 	argv[i] = argv[len]; 
     }
-    //strcpy(argv[loc], "\0"); //Removes file name
-    //strcpy(argv[loc+1], "\0"); //Removes > operator
 
     return 0;
 }
 
-//FIXME - Currently argv still has all its pieces
-//Child processes can't change argv in parent
-//Rework, parent/child checking no longer needed?
+//Handles all forms of redirection
 int redirHandler(char** &argv, int len){
     int ret = 0;
     int cnt = 0;
@@ -191,12 +273,25 @@ int redirHandler(char** &argv, int len){
 	    }else if(ret == 0){
 		return 0;
 	    }
+	}else if(argv[i][1] == '>'){
+	    bool fdRedir = false;
+	    for(unsigned j = 0; j < 10; j++){
+		if(argv[i][0] == j){
+		    fdRedir = true;
+		}
+	    }
+	    if(fdRedir){
+		cnt++;
+		ret = fdOutput(argv, len, i);
+		if(ret == -1){
+		    cerr << "fdOutput failed" << endl;
+		    return -1;
+		}else if(ret == 0){
+		    return 0;
+		}
+	    }
 	}
     }
-    //If child process, exec its commands
-    //if(ret == 1){
-	//execvp(argv[0], argv);
-    //}
     return cnt;
 }
 
@@ -453,7 +548,6 @@ void sig(int signum){
 }
 
 int outputLogin(){
-    
     char buf[BUFSIZ];
     char *login;
     if((login = getlogin()) == NULL){

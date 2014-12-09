@@ -17,6 +17,99 @@ void quit(){
     exit(0);
 }
 
+//FIXME - Still incomplete, needs serious testing
+int inputHandler(char** argv, int len, int loc){
+    //No first arg
+    if(loc-1 < 0){
+	cout << "inputHandler error, no LHS arg" << endl;
+	return -1;
+    }
+    int pid = fork();
+    if(pid == -1){
+	perror("inputHandler fork failed");
+	return -1;
+    }else if(pid == 0){
+	string str = "./";
+    	str.append(argv[loc-1]);
+    	str.append("/");
+
+    	int fd = open(str.c_str(), O_RDONLY, 0);
+	close(0);
+	dup2(fd, STDIN_FILENO);
+	close(fd);
+    }else{
+    	if(waitpid(pid, 0, 0) == -1){
+	    perror("inputHandler wait failed");
+	    return -1;
+	}
+    }
+    
+    return 0;
+}
+
+int outputHandler(char** argv, int len, int loc){
+    //No first arg
+    if(loc-1 < 0){
+	cout << "outputHandler error, no LHS arg" << endl;
+	return -1;
+    }
+    int pid = fork();
+    if(pid == -1){
+	perror("outputHandler fork failed");
+	return -1;
+    }else if(pid == 0){
+	string str = "./";
+    	str.append(argv[loc+1]);
+    	str.append("/");
+
+	int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	if(fd == -1){
+	    perror("open output");
+	    exit(1);
+	}
+	//Closes stdout
+	if(close(1) == -1){
+	    perror("close output");
+	    exit(1);
+	}
+	//Fd now in stdout slot
+	if(dup2(fd, STDOUT_FILENO) == -1){
+	    perror("dup output");
+	    exit(1);
+	}
+	strcpy(argv[loc], "\0"); //Removes file name
+	strcpy(argv[loc+1], "\0"); //Removes > operator
+
+	//int fd = open(str.c_str(), O_WRONLY | O_CREAT);
+	//dup2(fd, STDOUT_FILENO);
+	//close(fd);
+    }else{
+    	if(waitpid(pid, 0, 0) == -1){
+	    perror("outputHandler wait failed");
+	    return -1;
+	}
+    }
+
+
+    return 0;
+}
+
+int redirHandler(char ** argv, int len){
+    for(unsigned i = 0; i < len; i++){
+	if(strcmp(argv[i], "<") == 0){
+	    inputHandler(argv, len, i);
+	}else if((strcmp(argv[i], ">") == 0)){
+	    outputHandler(argv, len, i);
+	}else if((strcmp(argv[i], ">>")) == 0){
+	    //appendHandler(argv, len, i);
+	}else if(strcmp(argv[i], "|") == 0){
+	    //pipeHandler
+	    cout << "Pipe" << endl;
+	}
+    }
+    return 0;
+}
+
 /*
 void redirect(char* argv[], int num, bool &runExec){//consider making a bool to check if any operators are found
     int x = 0;
@@ -468,6 +561,19 @@ int main(int argc, char* argv[]){
 	    	while(argv[numArg] != NULL){
 		    numArg++;
 	        }
+
+		//FIXME - REDIRECTION IMPLEMENTATION GOES HERE
+		if(redirHandler(argv, numArg) == -1){
+		    cout << "redirHandler failed" << endl;
+		    continue;
+		    //FIXME - should it return -1 instead?
+		}
+		
+
+
+
+
+
 	        //redirect(argv, numArg, runExec); //i/o redirection
 
 		//Second fork - FIXME -Why?

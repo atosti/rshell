@@ -460,13 +460,14 @@ int noOutput(vector<string> &vout, vector<string> &dirName, int flags){
     //If -R is set
     if((flags == 4) || (flags == 5) || (flags == 6) || (flags == 7)){
 	bool noOutput = true;
-	dirSearch(dirName, currDir, flags, noOutput);
+	dirName.push_back(currDir);
     	for(unsigned i = 0; i < dirName.size(); i++){
 	    currDir = dirName.at(i);
 	    dirSearch(dirName, currDir, flags, noOutput);
     	}
     	sort(dirName.begin(), dirName.end());
-    }
+	dirOutput(dirName, vout, flags-4);
+    }else{
 
     if((dirp = opendir(currDir.c_str())));
     else{
@@ -540,6 +541,7 @@ int noOutput(vector<string> &vout, vector<string> &dirName, int flags){
     //Clears vout for next dir
     while(vout.size() > 0){
         vout.pop_back();
+    }
     }
 
     return 0;

@@ -18,28 +18,26 @@ void quit(){
 }
 
 //FIXME - Still incomplete, needs serious testing
-int inputHandler(char** argv, int len, int loc){
+int input(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
-	cerr << "inputHandler, no LHS arg" << endl;
+	cerr << "input, no LHS arg" << endl;
 	return -1;
     //No second arg
     }else if(argv[loc+1] == NULL){
-	cerr << "inputHandler, no RHS arg" << endl;
+	cerr << "input, no RHS arg" << endl;
 	return -1;
     }
     //Fork before modding fds
-    int pid = fork();
-    if(pid == -1){
-	perror("intputHandler fork failed");
-	return -1;
-    }else if(pid == 0){
+    //int pid = fork();
+    //if(pid == -1){
+	//perror("input fork failed");
+	//return -1;
+    //}else if(pid == 0){
 	string str = "./";
     	str.append(argv[loc+1]);
-    	//str.append("/");
 
-	cout << "Str: " << str << endl;
-
+	//Opens file for reading
 	int fd = open(str.c_str(), O_RDONLY, 0);
 	if(fd == -1){
 	    perror("open input");
@@ -55,39 +53,45 @@ int inputHandler(char** argv, int len, int loc){
 	    perror("dup2 input");
 	    exit(1);
 	}
-	for(unsigned i = 0; i < loc-1; i++){
-	    argv[i] = argv[i+1];
+	//strcpy(argv[loc], "\0");
+	//strcpy(argv[loc+1], "\0");
+
+	for(unsigned i = 1; i < len; i++){
+	//for(unsigned i = 1; argv[i] != NULL; i++){
+	    argv[i] = argv[i+1]; 
+	    //cerr << "argv[" << i << "]: " << argv[i] << endl;
 	}
 
 	//strcpy(argv[loc], "\0"); //Removes operator
 	//strcpy(argv[loc-1], "\0"); //Removes file name
-    }else{
-    	if(waitpid(pid, 0, 0) == -1){
-	    perror("inputHandler wait failed");
-	    return -1;
-	}
-	//Returns 1 to show it's a parent
-	return 1;
-    }
-
-    return 0;
+	//return 1;
+    //}else{
+    	//if(waitpid(pid, 0, 0) == -1){
+	    //perror("input wait failed");
+	    //return -1;
+	//}
+	//Returns 0 to show it's a parent
+	return 0;
+    //}
+    //Returns 1 if a child
+    //return 1;
 }
 
 //FIXME - Currently only handles 1 file at a time
-int outputHandler(char** &argv, int len, int loc){
+int output(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
-	cerr << "outputHandler error, no LHS arg" << endl;
+	cerr << "output error, no LHS arg" << endl;
 	return -1;
     //No second arg
     }else if(argv[loc+1] == NULL){
-	cerr << "outputHandler error, no RHS arg" << endl;
+	cerr << "output error, no RHS arg" << endl;
 	return -1;
     }
     //Fork before modding fds
     int pid = fork();
     if(pid == -1){
-	perror("outputHandler fork failed");
+	perror("output fork failed");
 	return -1;
     }else if(pid == 0){
 	string str = "./";
@@ -113,30 +117,30 @@ int outputHandler(char** &argv, int len, int loc){
 	strcpy(argv[loc+1], "\0"); //Removes > operator
     }else{
     	if(waitpid(pid, 0, 0) == -1){
-	    perror("outputHandler wait failed");
+	    perror("output wait failed");
 	    return -1;
 	}
-	//Returns 1 to show it's a parent
-	return 1;
+	//Returns 0 to show it's a parent
+	return 0;
     }
 
-    return 0;
+    return 1;
 }
 
-int appendHandler(char** argv, int len, int loc){
+int append(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
-	cerr << "outputHandler error, no LHS arg" << endl;
+	cerr << "append, no LHS arg" << endl;
 	return -1;
     //No second arg
     }else if(argv[loc+1] == NULL){
-	cerr << "appendHandler error, no RHS arg" << endl;
+	cerr << "append, no RHS arg" << endl;
 	return -1;
     }
     //Fork before modding fds
     int pid = fork();
     if(pid == -1){
-	perror("appendHandler fork failed");
+	perror("append fork failed");
 	return -1;
     }else if(pid == 0){
 	string str = "./";
@@ -162,53 +166,60 @@ int appendHandler(char** argv, int len, int loc){
 	strcpy(argv[loc+1], "\0"); //Removes > operator
     }else{
     	if(waitpid(pid, 0, 0) == -1){
-	    perror("appendHandler wait");
+	    perror("append wait");
 	    return -1;
 	}
-	//Returns 1 to show it's a parent
-	return 1;
+	//Returns 0 to show it's a parent
+	return 0;
     }   
-    return 0;
+    return 1;
 }
 
-int redirHandler(char** argv, int len){
+//FIXME - Currently argv still has all its pieces
+//Child processes can't change argv in parent
+int redirHandler(char** &argv, int len){
     int ret = 0;
+    int cnt = 0;
     for(unsigned i = 0; i < len; i++){
 	if(strcmp(argv[i], "<") == 0){
-	    ret = inputHandler(argv, len, i);
+	    cnt++;
+	    ret = input(argv, len, i);
 	    if(ret == -1){
-		cerr << "Inputhandler failed" << endl;
+		cerr << "Input failed" << endl;
 		return -1;
 	    //If a parent
-	    }else if(ret == 1){
+	    }else if(ret == 0){
 		return 0; }
 	}else if((strcmp(argv[i], ">") == 0)){
-	    ret = outputHandler(argv, len, i);
+	    cnt++;
+	    ret = output(argv, len, i);
 	    if(ret == -1){
-		cerr << "Outputhandler failed" << endl;
+		cerr << "Output failed" << endl;
 		return -1;
 	    //If a parent
-	    }else if(ret == 1){
+	    }else if(ret == 0){
 		return 0;
 	    }
 	}else if((strcmp(argv[i], ">>")) == 0){
-	    ret = appendHandler(argv, len, i);
+	    cnt++;
+	    ret = append(argv, len, i);
 	    if(ret == -1){
-		cerr << "Appendhandler failed" << endl;
+		cerr << "Append failed" << endl;
 		return -1;
 	    //If a parent
-	    }else if(ret == 1){
+	    }else if(ret == 0){
 		return 0;
 	    }
 	}else if(strcmp(argv[i], "|") == 0){
-	    //pipeHandler
+	    cnt++;
+	    //pipe(argv, len, i);
 	}
     }
-    if(getpid() == 0){
-	kill(getpid(), SIGKILL); 
+    //If child process, kill before proceeding
+    if(ret == 1){
+	execvp(argv[0], argv);
     }
-
-    return 0;
+    return cnt;
 }
 
 /*
@@ -665,19 +676,19 @@ int main(int argc, char* argv[]){
 	        }
 
 		//FIXME - REDIRECTION IMPLEMENTATION GOES HERE
-		int ret = 0;
-		ret = redirHandler(argv, numArg);
-		if(ret == -1){
+		int ret2 = 0;
+		ret2 = redirHandler(argv, numArg);
+		if(ret2 == -1){
 		    cout << "redirHandler failed" << endl;
 		    return -1;
-		    //FIXME - Should child just be killed earlier? or return -1 here?
 		}
+
+		//cerr << "argv[0]: " << argv[0] << endl;
+		//cerr << "argv[1]: " << argv[1] << endl;
+		//cerr << "argv[2]: " << argv[2] << endl;
 		
 
-
-
-
-
+		//FIXME - Old redirect
 	        //redirect(argv, numArg, runExec); //i/o redirection
 
 		//Second fork - FIXME -Why?

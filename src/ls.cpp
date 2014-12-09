@@ -199,11 +199,84 @@ int printAll(string currFile, string dirName){
     return 0;
 }
 
+int dirSearch(vector<string> &dirName, string currDir, int flags, bool noOutput){
+    DIR *dirp;
+    dirent *direntp;
+    if((dirp = opendir(currDir.c_str())));
+    else{
+	perror("opendir failed - dirSearch");
+	return -1;
+    }
+
+    //Skips . and .. from being added to vector
+    if(direntp = readdir(dirp));
+    else{
+        perror("readdir1 failed");
+	return -1;
+    }
+    if(direntp = readdir(dirp)){
+    }else{
+        perror("readdir2 failed");
+	return -1;
+    }
+
+
+    //Reads directory
+    struct stat sb;
+    string currFile = "";
+    string str = "";
+    errno = 0;
+    while((direntp = readdir(dirp))){
+	currFile = direntp->d_name;
+	str = "";
+	str.append(currDir);
+    	str.append("/");
+    	str.append(currFile);
+
+	if(lstat(str.c_str(), &sb)){
+	    perror("lstat failed");
+	    return -1;
+	}
+	//If -a is set
+	if(((flags == 1) || (flags == 3) || (flags == 5) || (flags == 7)) || (noOutput)){
+	    if(S_ISDIR(sb.st_mode)){
+	    	dirName.push_back(str);
+	    }
+	}else{
+	    if(S_ISDIR(sb.st_mode) && (currFile.at(0) != '.')){
+	    	dirName.push_back(str);
+	    }
+	}
+    }
+    if(errno != 0){
+	perror("readdir failed");
+	return -1;
+    }
+    //Closes directory
+    if(closedir(dirp) == -1){
+        perror("closedir error"); 
+	return -1;
+    }
+
+    return 0;
+}
+
 int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
     string currDir = "";
+    string currFile = "";
     DIR *dirp;
     dirent *direntp;
     sort(dirName.begin(), dirName.end());
+    //If ls -R is set
+    if((flags == 4) || (flags == 5) || (flags == 6) || (flags == 7)){
+	//Bool for whether files/dirs were input
+	bool noOutput = false;
+    	for(unsigned i = 0; i < dirName.size(); i++){
+	    currDir = dirName.at(i);
+	    dirSearch(dirName, currDir, flags, noOutput);
+    	}
+    	sort(dirName.begin(), dirName.end());
+    }
     for(unsigned i = 0; i < dirName.size(); i++){
 	//When mult dirs passed, output each one's name
 	if(dirName.size() > 1){
@@ -230,7 +303,15 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
         }
 	errno = 0;
     	while((direntp = readdir(dirp))){
-	    vout.push_back(direntp->d_name);
+	    currFile = direntp->d_name;
+	    //If -a is set
+	    if((flags == 1) || (flags == 3) || (flags == 5) || (flags == 7)){
+	    	vout.push_back(currFile);
+	    }else{
+		if(currFile.at(0) != '.'){
+		    vout.push_back(currFile);
+		}
+	    }
     	}
     	if(errno != 0){
 	    perror("readdir failed");
@@ -243,6 +324,7 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
     	}
 	//Outputs vout
 	sort(vout.begin(), vout.end());
+
 	struct stat sb;
 	//If -l was passed
         if((flags == 2) || (flags == 3) || (flags == 6) || (flags == 7)){
@@ -369,11 +451,23 @@ int fileOutput(vector<string> &fileName, vector<string> &vout, int flags){
 }
 
 //No files passed
-int noOutput(vector<string> &vout, int flags){
+int noOutput(vector<string> &vout, vector<string> &dirName, int flags){
     DIR *dirp;
     dirent *direntp;
     string currDir = ".";
     string currFile = "";
+
+    //If -R is set
+    if((flags == 4) || (flags == 5) || (flags == 6) || (flags == 7)){
+	bool noOutput = true;
+	dirSearch(dirName, currDir, flags, noOutput);
+    	for(unsigned i = 0; i < dirName.size(); i++){
+	    currDir = dirName.at(i);
+	    dirSearch(dirName, currDir, flags, noOutput);
+    	}
+    	sort(dirName.begin(), dirName.end());
+    }
+
     if((dirp = opendir(currDir.c_str())));
     else{
 	perror("opendir failed");
@@ -406,9 +500,9 @@ int noOutput(vector<string> &vout, int flags){
     //Outputs files
     sort(vout.begin(), vout.end());
     //If -l is set
+    struct stat sb;
     if((flags == 2) || (flags == 3) || (flags == 6) || (flags == 7)){
 	for(unsigned i = 0; i < vout.size(); i++){
-	    //int printAll(string currFile, string dirName)
 	    printAll(vout.at(i), currDir);
 	}
     //If not long list
@@ -458,7 +552,7 @@ int outputHandler(int ns, int flags, vector<string> dirName, vector<string> file
 
     //---No files passed---
     if(ns == 0){
-	if(noOutput(vout, flags) == -1){
+	if(noOutput(vout, dirName, flags) == -1){
 	    cout << "noOutput failed" << endl;
 	    return -1;
 	}

@@ -52,6 +52,7 @@ int outputHandler(char** &argv, int len, int loc){
     if(loc-1 < 0){
 	cerr << "outputHandler error, no LHS arg" << endl;
 	return -1;
+    //No second arg
     }else if(argv[loc+1] == NULL){
 	cerr << "outputHandler error, no RHS arg" << endl;
 	return -1;
@@ -65,13 +66,18 @@ int outputHandler(char** &argv, int len, int loc){
     	str.append(argv[loc+1]);
     	str.append("/");
 
+	int oldFd = dup(1);
+	if(oldFd == -1){
+	    perror("outputHandler dup");
+	    return -1;
+	}
 	int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
 	if(fd == -1){
 	    perror("open output");
 	    exit(1);
 	}
 	//Closes stdout
-	if(close(STDOUT_FILENO) == -1){
+	if(close(oldFd) == -1){
 	    perror("close output");
 	    exit(1);
 	}
@@ -88,9 +94,9 @@ int outputHandler(char** &argv, int len, int loc){
 	//cerr << "----------------------------" << endl;
 
 	//for(unsigned i = loc+1; i < len; i++){
-	//    if(argv[i] == ">"){
+	   // if(argv[i] == ">"){
 		//clear this current file, as it's not the last
-	//	argv[loc+1]
+		//argv[loc+1]
 	//    }
 	//}
 

@@ -17,7 +17,11 @@ void quit(){
     exit(0);
 }
 
-//FIXME - Still incomplete, needs serious testing
+int pipe(char** argv, int len, int loc){
+    return 0;
+}
+
+//FIXME - Only handles 1 file
 int input(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
@@ -28,56 +32,34 @@ int input(char** &argv, int len, int loc){
 	cerr << "input, no RHS arg" << endl;
 	return -1;
     }
-    //Fork before modding fds
-    //int pid = fork();
-    //if(pid == -1){
-	//perror("input fork failed");
-	//return -1;
-    //}else if(pid == 0){
-	string str = "./";
-    	str.append(argv[loc+1]);
+    string str = "./";
+    str.append(argv[loc+1]);
 
-	//Opens file for reading
-	int fd = open(str.c_str(), O_RDONLY, 0);
-	if(fd == -1){
-	    perror("open input");
-	    exit(1);
-	}
-	//Closes stdin
-	if(close(STDIN_FILENO) == -1){
-	    perror("close input");
-	    exit(1);
-	}
-	//Fd now in stdin slot
-	if(dup2(fd, STDIN_FILENO) == -1){
-	    perror("dup2 input");
-	    exit(1);
-	}
-	//strcpy(argv[loc], "\0");
-	//strcpy(argv[loc+1], "\0");
+    //Opens file for reading
+    int fd = open(str.c_str(), O_RDONLY, 0);
+    if(fd == -1){
+    	perror("open input");
+	exit(1);
+    }
+    //Closes stdin
+    if(close(STDIN_FILENO) == -1){
+        perror("close input");
+	exit(1);
+    }
+    //Fd now in stdin slot
+    if(dup2(fd, STDIN_FILENO) == -1){
+	perror("dup2 input");
+	exit(1);
+    }
+    for(unsigned i = 1; i < len; i++){
+	argv[i] = argv[i+1]; 
+    }
 
-	for(unsigned i = 1; i < len; i++){
-	//for(unsigned i = 1; argv[i] != NULL; i++){
-	    argv[i] = argv[i+1]; 
-	    //cerr << "argv[" << i << "]: " << argv[i] << endl;
-	}
-
-	//strcpy(argv[loc], "\0"); //Removes operator
-	//strcpy(argv[loc-1], "\0"); //Removes file name
-	//return 1;
-    //}else{
-    	//if(waitpid(pid, 0, 0) == -1){
-	    //perror("input wait failed");
-	    //return -1;
-	//}
-	//Returns 0 to show it's a parent
-	return 0;
-    //}
-    //Returns 1 if a child
-    //return 1;
+    return 0;
 }
 
 //FIXME - Currently only handles 1 file at a time
+//Forks not needed - remove later
 int output(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
@@ -127,6 +109,7 @@ int output(char** &argv, int len, int loc){
     return 1;
 }
 
+//FIXME - Forks not needed, remove later
 int append(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
@@ -177,6 +160,7 @@ int append(char** &argv, int len, int loc){
 
 //FIXME - Currently argv still has all its pieces
 //Child processes can't change argv in parent
+//Rework, parent/child checking no longer needed?
 int redirHandler(char** &argv, int len){
     int ret = 0;
     int cnt = 0;
@@ -189,7 +173,8 @@ int redirHandler(char** &argv, int len){
 		return -1;
 	    //If a parent
 	    }else if(ret == 0){
-		return 0; }
+		return 0;
+	    }
 	}else if((strcmp(argv[i], ">") == 0)){
 	    cnt++;
 	    ret = output(argv, len, i);
@@ -212,10 +197,17 @@ int redirHandler(char** &argv, int len){
 	    }
 	}else if(strcmp(argv[i], "|") == 0){
 	    cnt++;
-	    //pipe(argv, len, i);
+	    ret = pipe(argv, len, i);
+	    if(ret == -1){
+		cerr << "Pipe failed" << endl;
+		return -1;
+	    //If a parent
+	    }else if(ret == 0){
+		return 0;
+	    }
 	}
     }
-    //If child process, kill before proceeding
+    //If child process, exec its commands
     if(ret == 1){
 	execvp(argv[0], argv);
     }

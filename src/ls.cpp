@@ -328,12 +328,14 @@ int dirOutput(vector<string> &dirName, vector<string> &vout, int flags){
 	struct stat sb;
 	//If -l was passed
         if((flags == 2) || (flags == 3) || (flags == 6) || (flags == 7)){
-	    if(lstat(currDir.c_str(), &sb) == -1){
+	    if(stat(currDir.c_str(), &sb) == -1){
 		perror("lstat failed");
 		return -1;
 	    }
 	    //FIXME - Incorrect total being displayed
-	    cout << "Total " << ((sb.st_blksize)/(sb.st_size)) << endl;
+	    //cout << "Total " << sb.st_size << endl;
+    	    cout << "Total " << sb.st_blocks << endl;
+    	    //cout << "Total " << sb.st_size << endl;
 	    for(unsigned j = 0; j < vout.size(); j++){
 	    	printAll(vout.at(j), currDir);
 	    }
@@ -502,6 +504,15 @@ int noOutput(vector<string> &vout, vector<string> &dirName, int flags){
     sort(vout.begin(), vout.end());
     //If -l is set
     struct stat sb;
+
+    if(lstat(currDir.c_str(), &sb) == -1){
+	perror("lstat failed");
+	return -1;
+    }
+    //FIXME - Incorrect total being displayed
+    //cout << "Total " << ((sb.st_blksize)/(sb.st_size)) << endl;
+    cout << "Total " << sb.st_blocks << endl;
+
     if((flags == 2) || (flags == 3) || (flags == 6) || (flags == 7)){
 	for(unsigned i = 0; i < vout.size(); i++){
 	    printAll(vout.at(i), currDir);

@@ -17,6 +17,7 @@ void quit(){
     exit(0);
 }
 
+//FIXME - Implement piping
 int pipe(char** argv, int len, int loc){
     return 0;
 }
@@ -51,7 +52,8 @@ int input(char** &argv, int len, int loc){
 	perror("dup2 input");
 	exit(1);
     }
-    for(unsigned i = 1; i < len; i++){
+    //FIXME - Perhaps start at loc? (used to start @ i = 1)
+    for(unsigned i = loc; i < len; i++){
 	argv[i] = argv[i+1]; 
     }
 
@@ -59,7 +61,7 @@ int input(char** &argv, int len, int loc){
 }
 
 //FIXME - Currently only handles 1 file at a time
-//Forks not needed - remove later
+//Modify this, doesn't work
 int output(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
@@ -70,46 +72,38 @@ int output(char** &argv, int len, int loc){
 	cerr << "output error, no RHS arg" << endl;
 	return -1;
     }
-    //Fork before modding fds
-    int pid = fork();
-    if(pid == -1){
-	perror("output fork failed");
-	return -1;
-    }else if(pid == 0){
-	string str = "./";
-    	str.append(argv[loc+1]);
-    	str.append("/");
+    string str = "./";
+    str.append(argv[loc+1]);
+    str.append("/");
 
-	int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
-	if(fd == -1){
-	    perror("open output");
-	    exit(1);
-	}
-	//Closes stdout
-	if(close(STDOUT_FILENO) == -1){
-	    perror("close output");
-	    exit(1);
-	}
-	//Fd now in stdout slot
-	if(dup2(fd, STDOUT_FILENO) == -1){
-	    perror("dup2 output");
-	    exit(1);
-	}
-	strcpy(argv[loc], "\0"); //Removes file name
-	strcpy(argv[loc+1], "\0"); //Removes > operator
-    }else{
-    	if(waitpid(pid, 0, 0) == -1){
-	    perror("output wait failed");
-	    return -1;
-	}
-	//Returns 0 to show it's a parent
-	return 0;
+    int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd == -1){
+    	perror("open output");
+	exit(1);
+    }
+    //Closes stdout
+    if(close(STDOUT_FILENO) == -1){
+	perror("close output");
+	exit(1);
+    }
+    //Fd now in stdout slot
+    if(dup2(fd, STDOUT_FILENO) == -1){
+	perror("dup2 output");
+	exit(1);
+    }
+    //FIXME put into a loop and remove proper pieces
+    //Seems to work - Test later
+    for(unsigned i = loc; i != len; i++){
+	argv[i] = argv[len]; 
     }
 
-    return 1;
+    //strcpy(argv[loc], "\0"); //Removes file name
+    //strcpy(argv[loc+1], "\0"); //Removes > operator
+
+    return 0;
 }
 
-//FIXME - Forks not needed, remove later
+//FIXME - Broken now!
 int append(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
@@ -121,41 +115,33 @@ int append(char** &argv, int len, int loc){
 	return -1;
     }
     //Fork before modding fds
-    int pid = fork();
-    if(pid == -1){
-	perror("append fork failed");
-	return -1;
-    }else if(pid == 0){
-	string str = "./";
-    	str.append(argv[loc+1]);
-    	str.append("/");
+    string str = "./";
+    str.append(argv[loc+1]);
+    str.append("/");
 
-	int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_APPEND, 0666);
-	if(fd == -1){
-	    perror("open append");
-	    exit(1);
-	}
-	//Closes stdout
-	if(close(STDOUT_FILENO) == -1){
-	    perror("close append");
-	    exit(1);
-	}
-	//Fd now in stdout slot
-	if(dup2(fd, STDOUT_FILENO) == -1){
-	    perror("dup2 append");
-	    exit(1);
-	}
-	strcpy(argv[loc], "\0"); //Removes file name
-	strcpy(argv[loc+1], "\0"); //Removes > operator
-    }else{
-    	if(waitpid(pid, 0, 0) == -1){
-	    perror("append wait");
-	    return -1;
-	}
-	//Returns 0 to show it's a parent
-	return 0;
-    }   
-    return 1;
+    int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_APPEND, 0666);
+    if(fd == -1){
+	perror("open append");
+	exit(1);
+    }
+    //Closes stdout
+    if(close(STDOUT_FILENO) == -1){
+	perror("close append");
+	exit(1);
+    }
+    //Fd now in stdout slot
+    if(dup2(fd, STDOUT_FILENO) == -1){
+	perror("dup2 append");
+	exit(1);
+    }
+    //FIXME - loop it instead
+    for(unsigned i = loc; i != len; i++){
+	argv[i] = argv[len]; 
+    }
+    //strcpy(argv[loc], "\0"); //Removes file name
+    //strcpy(argv[loc+1], "\0"); //Removes > operator
+
+    return 0;
 }
 
 //FIXME - Currently argv still has all its pieces
@@ -208,9 +194,9 @@ int redirHandler(char** &argv, int len){
 	}
     }
     //If child process, exec its commands
-    if(ret == 1){
-	execvp(argv[0], argv);
-    }
+    //if(ret == 1){
+	//execvp(argv[0], argv);
+    //}
     return cnt;
 }
 
@@ -675,9 +661,10 @@ int main(int argc, char* argv[]){
 		    return -1;
 		}
 
-		//cerr << "argv[0]: " << argv[0] << endl;
-		//cerr << "argv[1]: " << argv[1] << endl;
-		//cerr << "argv[2]: " << argv[2] << endl;
+		cerr << "argv[0]: " << argv[0] << endl;
+		cerr << "argv[1]: " << argv[1] << endl;
+		cerr << "argv[2]: " << argv[2] << endl;
+		cerr << "argv[3]: " << argv[3] << endl;
 		
 
 		//FIXME - Old redirect

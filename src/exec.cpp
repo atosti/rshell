@@ -19,7 +19,6 @@ void quit(){
 
 //FIXME - Still incomplete, needs serious testing
 int inputHandler(char** argv, int len, int loc){
-    cout << "argv[loc]: " << argv[loc] << endl;
     //No first arg
     if(loc-1 < 0){
 	cerr << "inputHandler, no LHS arg" << endl;
@@ -37,11 +36,11 @@ int inputHandler(char** argv, int len, int loc){
     }else if(pid == 0){
 	string str = "./";
     	str.append(argv[loc+1]);
-    	str.append("/");
+    	//str.append("/");
 
 	cout << "Str: " << str << endl;
 
-	int fd = open(str.c_str(), O_RDWR, 0);
+	int fd = open(str.c_str(), O_RDONLY, 0);
 	if(fd == -1){
 	    perror("open input");
 	    exit(1);
@@ -56,9 +55,12 @@ int inputHandler(char** argv, int len, int loc){
 	    perror("dup2 input");
 	    exit(1);
 	}
+	for(unsigned i = 0; i < loc-1; i++){
+	    argv[i] = argv[i+1];
+	}
 
-	strcpy(argv[loc], "\0"); //Removes operator
-	strcpy(argv[loc-1], "\0"); //Removes file name
+	//strcpy(argv[loc], "\0"); //Removes operator
+	//strcpy(argv[loc-1], "\0"); //Removes file name
     }else{
     	if(waitpid(pid, 0, 0) == -1){
 	    perror("inputHandler wait failed");
@@ -121,22 +123,83 @@ int outputHandler(char** &argv, int len, int loc){
     return 0;
 }
 
+int appendHandler(char** argv, int len, int loc){
+    //No first arg
+    if(loc-1 < 0){
+	cerr << "outputHandler error, no LHS arg" << endl;
+	return -1;
+    //No second arg
+    }else if(argv[loc+1] == NULL){
+	cerr << "appendHandler error, no RHS arg" << endl;
+	return -1;
+    }
+    //Fork before modding fds
+    int pid = fork();
+    if(pid == -1){
+	perror("appendHandler fork failed");
+	return -1;
+    }else if(pid == 0){
+	string str = "./";
+    	str.append(argv[loc+1]);
+    	str.append("/");
+
+	int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_APPEND, 0666);
+	if(fd == -1){
+	    perror("open append");
+	    exit(1);
+	}
+	//Closes stdout
+	if(close(STDOUT_FILENO) == -1){
+	    perror("close append");
+	    exit(1);
+	}
+	//Fd now in stdout slot
+	if(dup2(fd, STDOUT_FILENO) == -1){
+	    perror("dup2 append");
+	    exit(1);
+	}
+	strcpy(argv[loc], "\0"); //Removes file name
+	strcpy(argv[loc+1], "\0"); //Removes > operator
+    }else{
+    	if(waitpid(pid, 0, 0) == -1){
+	    perror("appendHandler wait");
+	    return -1;
+	}
+	//Returns 1 to show it's a parent
+	return 1;
+    }   
+    return 0;
+}
+
 int redirHandler(char** argv, int len){
     int ret = 0;
     for(unsigned i = 0; i < len; i++){
 	if(strcmp(argv[i], "<") == 0){
-	    inputHandler(argv, len, i);
+	    ret = inputHandler(argv, len, i);
+	    if(ret == -1){
+		cerr << "Inputhandler failed" << endl;
+		return -1;
+	    //If a parent
+	    }else if(ret == 1){
+		return 0; }
 	}else if((strcmp(argv[i], ">") == 0)){
 	    ret = outputHandler(argv, len, i);
 	    if(ret == -1){
 		cerr << "Outputhandler failed" << endl;
 		return -1;
+	    //If a parent
 	    }else if(ret == 1){
-		cerr << "Parent is returning home!" << endl;
 		return 0;
 	    }
 	}else if((strcmp(argv[i], ">>")) == 0){
-	    //appendHandler(argv, len, i);
+	    ret = appendHandler(argv, len, i);
+	    if(ret == -1){
+		cerr << "Appendhandler failed" << endl;
+		return -1;
+	    //If a parent
+	    }else if(ret == 1){
+		return 0;
+	    }
 	}else if(strcmp(argv[i], "|") == 0){
 	    //pipeHandler
 	}
@@ -187,7 +250,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
     }
     if(flags == 0 || flags == 1){//Output or Append
 	if(last == (x - 1)){//Ends with '>' or '>>'
-	    if(flags == 0){
+	    if(`flags == 0){
 	    	cerr << "error: expected argument for >" << endl; 
 	    	exit(0);
 	    }else if(flags == 1){
@@ -197,6 +260,7 @@ void redirect(char* argv[], int num, bool &runExec){//consider making a bool to 
 	}else if(flags == 0){//Output
 	    //if(remove(argv[x - 1]) != 0){
 		//perror("remove output");
+	    //s
 	    //}
 	    //FIXME - clear output of the file
 	    int fdo = open(argv[x - 1], O_WRONLY | O_CREAT);

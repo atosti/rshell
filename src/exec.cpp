@@ -10,11 +10,49 @@
 #include <signal.h>
 #include <map>
 #include <vector>
+#include <errno.h>
 using namespace std;
 
 void quit(){
     cout << "Exiting..." << endl;
     exit(0);
+}
+
+int altInput(char** &argv, int len, int loc){
+    //No first arg
+    if(loc-1 < 0){
+	cerr << "alt input, no LHS arg" << endl;
+	return -1;
+    //No second arg
+    }else if(argv[loc+1] == NULL){
+	cerr << "alt input, no RHS arg" << endl;
+	return -1;
+    }
+    string str = "./";
+    str.append(argv[loc+1]);
+
+    //Opens file for reading
+    int fd = open(str.c_str(), O_RDONLY, 0);
+    if(fd == -1){
+    	perror("open alt input");
+	exit(1);
+    }
+    //Closes stdin
+    if(close(STDIN_FILENO) == -1){
+        perror("close alt input");
+	exit(1);
+    }
+    //Fd now in stdin slot
+    if(dup2(fd, STDIN_FILENO) == -1){
+	perror("dup2 alt input");
+	exit(1);
+    }
+    //FIXME - Perhaps start at loc? (used to start @ i = 1)
+    for(unsigned i = loc; i < len; i++){
+	argv[i] = argv[i+1]; 
+    }
+
+    return 0;
 }
 
 int fdOutput(char** &argv, int len, int loc){
@@ -289,8 +327,6 @@ int redirHandler(char** &argv, int len){
 	    }
 	    if(fdRedir){
 		cnt++;
-		//FIXME
-		//cout << "Fdoutput entered!" << endl;
 		ret = fdOutput(argv, len, i);
 		if(ret == -1){
 		    cerr << "fdOutput failed" << endl;
@@ -298,6 +334,15 @@ int redirHandler(char** &argv, int len){
 		}else if(ret == 0){
 		    return 0;
 		}
+	    }
+	}else if(strcmp(argv[i], "<<<") == 0){
+	    cnt++;
+	    ret = altInput(argv, len, i);
+	    if(ret == -1){
+		cerr << "altInput failed" << endl;
+		return -1;
+	    }else if(ret == 0){
+		return 0;
 	    }
 	}
     }
@@ -338,17 +383,30 @@ int outputLogin(){
 	cout << login[i];
     }
     //Note: getcwd() causes "still reachable" mem leaks
+    errno = 0;
     cout << ":" << getcwd(buf, sizeof(buf)) << " $ ";
+    if(errno != 0){
+	perror("getcwd failed");
+	return -1;
+    }
 
     return 0;
 }
 
 int main(int argc, char* argv[]){
+    errno = 0;
     signal(SIGINT, sig);
+    if(errno != 0){
+	perror("signal failed");
+	return -1;
+    }
     pidParent = getpid();
     string usrInput; //Holds user input
     char *path = getenv("PATH"); //sets path
-    chdir("./");
+    if(chdir("./") == -1){
+	perror("chdir failed");
+	return -1;
+    }
 
     //Creates a map for non-exec commands
     map<string, void (*)()> commands;

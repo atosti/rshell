@@ -47,10 +47,13 @@ int inputHandler(char** argv, int len, int loc){
     return 0;
 }
 
-int outputHandler(char** argv, int len, int loc){
+int outputHandler(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
-	cout << "outputHandler error, no LHS arg" << endl;
+	cerr << "outputHandler error, no LHS arg" << endl;
+	return -1;
+    }else if(argv[loc+1] == NULL){
+	cerr << "outputHandler error, no RHS arg" << endl;
 	return -1;
     }
     int pid = fork();
@@ -62,13 +65,13 @@ int outputHandler(char** argv, int len, int loc){
     	str.append(argv[loc+1]);
     	str.append("/");
 
-	int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
 	if(fd == -1){
 	    perror("open output");
 	    exit(1);
 	}
 	//Closes stdout
-	if(close(1) == -1){
+	if(close(STDOUT_FILENO) == -1){
 	    perror("close output");
 	    exit(1);
 	}
@@ -77,36 +80,60 @@ int outputHandler(char** argv, int len, int loc){
 	    perror("dup output");
 	    exit(1);
 	}
+	//FIXME - remove later
+	//cerr << "argv[loc-2]: " << argv[loc-2] << endl;
+	//cerr << "argv[loc-1]: " << argv[loc-1] << endl;
+	//cerr << "argv[loc]: " << argv[loc] << endl;
+	//cerr << "argv[loc+1]: " << argv[loc+1] << endl;
+	//cerr << "----------------------------" << endl;
+
+	//for(unsigned i = loc+1; i < len; i++){
+	//    if(argv[i] == ">"){
+		//clear this current file, as it's not the last
+	//	argv[loc+1]
+	//    }
+	//}
+
 	strcpy(argv[loc], "\0"); //Removes file name
 	strcpy(argv[loc+1], "\0"); //Removes > operator
-
-	//int fd = open(str.c_str(), O_WRONLY | O_CREAT);
-	//dup2(fd, STDOUT_FILENO);
-	//close(fd);
+	//exit(0);
+	//kill(getpid(), SIGKILL);
     }else{
     	if(waitpid(pid, 0, 0) == -1){
 	    perror("outputHandler wait failed");
 	    return -1;
 	}
+	//Returns 1 to show it's a parent
+	return 1;
     }
-
 
     return 0;
 }
 
-int redirHandler(char ** argv, int len){
+int redirHandler(char** argv, int len){
+    int ret = 0;
     for(unsigned i = 0; i < len; i++){
 	if(strcmp(argv[i], "<") == 0){
-	    inputHandler(argv, len, i);
+	    //inputHandler(argv, len, i);
 	}else if((strcmp(argv[i], ">") == 0)){
-	    outputHandler(argv, len, i);
+	    ret = outputHandler(argv, len, i);
+	    if(ret == -1){
+		cerr << "Outputhandler failed" << endl;
+		return -1;
+	    }else if(ret == 1){
+		cerr << "Parent is returning home!" << endl;
+		return 0;
+	    }
 	}else if((strcmp(argv[i], ">>")) == 0){
 	    //appendHandler(argv, len, i);
 	}else if(strcmp(argv[i], "|") == 0){
 	    //pipeHandler
-	    cout << "Pipe" << endl;
 	}
     }
+    if(getpid() == 0){
+	kill(getpid(), SIGKILL); 
+    }
+
     return 0;
 }
 
@@ -565,7 +592,7 @@ int main(int argc, char* argv[]){
 		//FIXME - REDIRECTION IMPLEMENTATION GOES HERE
 		if(redirHandler(argv, numArg) == -1){
 		    cout << "redirHandler failed" << endl;
-		    continue;
+		    return -1;
 		    //FIXME - should it return -1 instead?
 		}
 		

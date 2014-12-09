@@ -31,25 +31,31 @@ int fdOutput(char** &argv, int len, int loc){
     str.append(argv[loc+1]);
     str.append("/");
 
+    int temp = int(argv[loc][0]) - 48;
+
+    //Opens file to write to
     int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if(fd == -1){
     	perror("open Fdoutput");
 	exit(1);
     }
-    //Closes stdout
-    if(close(STDOUT_FILENO) == -1){
+
+    //Closes passed fd
+    if(close(temp) == -1){
 	perror("close Fdoutput");
 	exit(1);
     }
-    //Fd now in stdout slot
-    if(dup2(argv[loc][0], STDOUT_FILENO) == -1){
+    //Fd now in old fd slot
+    if(dup2(fd, temp) == -1){
 	perror("dup2 Fdoutput");
 	exit(1);
     }
+
     //FIXME put into a loop and remove proper pieces
     //Seems to work - Test later
     for(unsigned i = loc; i != len; i++){
 	argv[i] = argv[len]; 
+	//cerr << "argv[" << i << "]: " << argv[i] << endl;
     }
     return 0;
 }
@@ -147,7 +153,6 @@ int input(char** &argv, int len, int loc){
 }
 
 //FIXME - Currently only handles 1 file at a time
-//Modify this, doesn't work
 int output(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
@@ -275,13 +280,17 @@ int redirHandler(char** &argv, int len){
 	    }
 	}else if(argv[i][1] == '>'){
 	    bool fdRedir = false;
+	    char curr = 'a';
 	    for(unsigned j = 0; j < 10; j++){
-		if(argv[i][0] == j){
+		curr = (char)(((int)'0')+j);
+		if(argv[i][0] == curr){
 		    fdRedir = true;
 		}
 	    }
 	    if(fdRedir){
 		cnt++;
+		//FIXME
+		//cout << "Fdoutput entered!" << endl;
 		ret = fdOutput(argv, len, i);
 		if(ret == -1){
 		    cerr << "fdOutput failed" << endl;
@@ -294,243 +303,6 @@ int redirHandler(char** &argv, int len){
     }
     return cnt;
 }
-
-/*
-void redirect(char* argv[], int num, bool &runExec){//consider making a bool to check if any operators are found
-    int x = 0;
-    int y = 0;
-    int last = -1;//char loc. of last symbol
-    int flags = -1; //Holds val corresponding to type of sym
-
-    while(x != num){//for each string
-        y = 0;//Resets y to beginning of a string
-	while(argv[x][y] != '\0'){//char in argv[]
-	    if(argv[x][y] == '>'){//Output check
-		if(argv[x][y+1] == '>'){//Append check
-		    flags = 1;
-		    last = x;
-		    y++; //used to avoid second > in >> being read as a solo >
-		}else{
-		    last = x;
-		    flags = 0;
-		}
-	    }else if(argv[x][y] == '<'){//Input
-		if((argv[x][y+1] == '<') &&
-		   (argv[x][y+2] == '<')){
-		    y+=2;
-		    last = x;
-		    flags = 4; //<<< found
-		}else{
-	  	    last = x;
-		    flags = 2;
-		}
-	    }else if(argv[x][y] == '|'){//Pipe
-		last = x;
-		flags = 3;
-	    }
-	    y++;//iterate chars
-	}//End of a string
-	x++;//iterate strings
-    }
-    if(flags == 0 || flags == 1){//Output or Append
-	if(last == (x - 1)){//Ends with '>' or '>>'
-	    if(`flags == 0){
-	    	cerr << "error: expected argument for >" << endl; 
-	    	exit(0);
-	    }else if(flags == 1){
-		cerr << "error: expected argument for >>" << endl;
-		exit(0);
-	    }
-	}else if(flags == 0){//Output
-	    //if(remove(argv[x - 1]) != 0){
-		//perror("remove output");
-	    //s
-	    //}
-	    //FIXME - clear output of the file
-	    int fdo = open(argv[x - 1], O_WRONLY | O_CREAT);
-	    if(fdo == -1){
-		perror("open output");
-		exit(1);
-	    }
-	    if(close(1) == -1){//close stdout
-		perror("close output");
-		exit(1);
-	    }
-	    if(dup2(fdo, STDOUT_FILENO) == -1){//fdo is now in slot 1 (stdout)
-		perror("dup output");
-		exit(1);
-	    }
-	    strcpy(argv[x-1], "\0"); //Removes file name
-	    strcpy(argv[x-2], "\0"); //Removes > operator
-	}else if(flags == 1){//Append
-	    int fdo = open(argv[x - 1], O_WRONLY | O_APPEND);
-	    if(fdo == -1){
-		perror("open append");
-		exit(1);
-	    }
-	    if(close(1) == -1){
-		perror("close append");
-		exit(1);
-	    }
-	    if(dup(fdo) == -1){
-		perror("dup append");
-		exit(1);
-	    }
-	    strcpy(argv[x-1], "\0");
-	    strcpy(argv[x-2], "\0");
-	}
-    }else if(flags == 2){//Input
-	int fdi = open(argv[x - 1], O_RDONLY);
-	if(fdi == -1){
-	    perror("open input");
-	    exit(1);
-	}
-	if(close(0) == -1){//close stdin
-	    perror("close input");
-	    exit(1);
-	}
-	if(dup2(fdi, STDIN_FILENO) == -1){//fdi is now in slot 0 (stdin)
-	    perror("dup input");
-	    exit(1);
-	}
-	for(unsigned i = 1; i < x; i++){
-	    argv[i] = argv[i+1];
-	}
-    }else if(flags == 3){//Pipe
-	int fdpc[2];//fds for parent to child
-	int fdcp[2];//fds for child to parent
-
-	if(pipe(fdpc) == -1){//Open pipe
-	    perror("pipe fdpc");
-	    exit(1);
-	}
-	if(pipe(fdcp) == -1){//Open pipe
-	    perror("pipe fdcp");
-	    exit(1);
-	}
-
-	int pid = fork();
-	if(pid == -1){
-	    perror("pipe fork");
-	    exit(1);
-	}else if(pid == 0){//In child process
-	    //Connects fdpc to stdin
-	    if(close(fdpc[1]) == -1){
-		perror("close fdpc[1]");
-		exit(1);
-	    }
-	    if(dup2(fdpc[0], STDIN_FILENO) == -1){
-		perror("dup2 fdpc[0]");
-		exit(1);
-	    }
-	    if(close(fdpc[0]) == -1){
-		perror("close fdpc[0]");
-		exit(1);
-	    }
-
-	    //Connects fdcp to stdout
-	    if(close(fdcp[0]) == -1){
-		perror("close fdcp[0]");
-		exit(1);
-	    }
-	    if(dup2(fdcp[1], STDOUT_FILENO) == -1){
-		perror("dup2 fdcp[1]");
-		exit(1);
-	    }
-	    if(close(fdcp[1]) == -1){
-		perror("close fdcp[1]");
-		exit(1);
-	    }
-	    //Execs first command
-	    char *buf[x];
-	    for(unsigned i = 0; i < last; i++){
-		//cerr << "argv[" << i << "]: " << argv[i] << endl;
-		strcpy(buf[i], argv[i]);
-	    }
-
-	    if(execvp(buf[0], argv) == -1){
-		perror("execvp pipe");
-		exit(1);
-	    }
-	
-	    //exit(1); //FIXME - needed?
-	}else{//Parent process
-	    //Close unneeded pipes
-	    if(close(fdpc[0]) == -1){
-		perror("close fdpc[0]");
-		exit(1);
-	    }
-	    if(close(fdcp[1]) == -1){
-		perror("close fdcp[1]");
-		exit(1);
-	    }
-
-	    //Execs second command
-	    char *buf[x];
-	    for(unsigned i = 0; i < (x - last); i++){
-		//cerr << "argv[" << i << "]: " << argv[i] << endl;
-		strcpy(buf[i], argv[i]);
-	    }
-
-	    if(execvp(buf[0], argv) == -1){
-		perror("execvp pipe");
-		exit(1);
-	    }
-
-	    //Open pipes
-	    
-	    //if(execvp(argv[last+1], argv) == -1){
-		//perror("execvp pipe");
-		//exit(1);
-	    //}
-
-	    //Create temp file, write execvp of last +1 to it, then
-	    //open that file in fdpc[1]
-
-	    if(fdpc[1] = open(argv[last + 1], O_WRONLY) == -1){
-		perror("fdpc[1] open");
-		exit(1);
-	    }
-	    //if(fdcp[0] = open(argv[last - 1], O_RDONLY) == -1){
-		//perror("fdcp[0] open");
-		//exit(1);
-	    //}
-
-	    //redirect input to child
-	    if(close(fdpc[1]) == -1){ //close out
-		perror("close fdpc[1]");
-		exit(1);
-	    }
-	    //read child process output
-	    if(read(fdcp[0], buf, sizeof(buf)) == -1){ //read in
-		perror("read fdcp[0]");
-		exit(1);
-	    }
-	    if(close(fdcp[0]) == -1){
-		perror("close fdcp[0]");
-		exit(1);
-	    }
-	    //call wait on exited child
-	    if(wait(0) == -1){
-		perror("wait pipe");
-		exit(1);
-	    }
-	}
-
-    }else if(flags == 4){//<<< string
-	cout << argv[x-1] << endl;
-	for(unsigned i = 1; i < x; i++){
-	    argv[i] = argv[i+1];
-	}
-	runExec = false;
-    }
-    if(flags != -1){//Recursive call
-	redirect(argv, last, runExec);
-    }
-    return;
-
-}
-*/
 
 //Globals for use in sig handler
 int pid = 0;
@@ -747,24 +519,20 @@ int main(int argc, char* argv[]){
 		    numArg++;
 	        }
 
-		//FIXME - REDIRECTION IMPLEMENTATION GOES HERE
+		//Redirection implementation
 		int ret2 = 0;
 		ret2 = redirHandler(argv, numArg);
 		if(ret2 == -1){
-		    cout << "redirHandler failed" << endl;
+		    cerr << "redirHandler failed" << endl;
 		    return -1;
 		}
 
-		cerr << "argv[0]: " << argv[0] << endl;
-		cerr << "argv[1]: " << argv[1] << endl;
-		cerr << "argv[2]: " << argv[2] << endl;
-		cerr << "argv[3]: " << argv[3] << endl;
+		//cerr << "argv[0]: " << argv[0] << endl;
+		//cerr << "argv[1]: " << argv[1] << endl;
+		//cerr << "argv[2]: " << argv[2] << endl;
+		//cerr << "argv[3]: " << argv[3] << endl;
 		
-
-		//FIXME - Old redirect
-	        //redirect(argv, numArg, runExec); //i/o redirection
-
-		//Second fork - FIXME -Why?
+		//Second fork
 	        pid2 = fork();
 	        if(pid2 == -1){
 		    perror("pid fork failed");

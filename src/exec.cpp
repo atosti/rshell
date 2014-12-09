@@ -19,34 +19,59 @@ void quit(){
 
 //FIXME - Still incomplete, needs serious testing
 int inputHandler(char** argv, int len, int loc){
+    cout << "argv[loc]: " << argv[loc] << endl;
     //No first arg
     if(loc-1 < 0){
-	cout << "inputHandler error, no LHS arg" << endl;
+	cerr << "inputHandler, no LHS arg" << endl;
+	return -1;
+    //No second arg
+    }else if(argv[loc+1] == NULL){
+	cerr << "inputHandler, no RHS arg" << endl;
 	return -1;
     }
+    //Fork before modding fds
     int pid = fork();
     if(pid == -1){
-	perror("inputHandler fork failed");
+	perror("intputHandler fork failed");
 	return -1;
     }else if(pid == 0){
 	string str = "./";
-    	str.append(argv[loc-1]);
+    	str.append(argv[loc+1]);
     	str.append("/");
 
-    	int fd = open(str.c_str(), O_RDONLY, 0);
-	close(0);
-	dup2(fd, STDIN_FILENO);
-	close(fd);
+	cout << "Str: " << str << endl;
+
+	int fd = open(str.c_str(), O_RDWR, 0);
+	if(fd == -1){
+	    perror("open input");
+	    exit(1);
+	}
+	//Closes stdin
+	if(close(STDIN_FILENO) == -1){
+	    perror("close input");
+	    exit(1);
+	}
+	//Fd now in stdin slot
+	if(dup2(fd, STDIN_FILENO) == -1){
+	    perror("dup2 input");
+	    exit(1);
+	}
+
+	strcpy(argv[loc], "\0"); //Removes operator
+	strcpy(argv[loc-1], "\0"); //Removes file name
     }else{
     	if(waitpid(pid, 0, 0) == -1){
 	    perror("inputHandler wait failed");
 	    return -1;
 	}
+	//Returns 1 to show it's a parent
+	return 1;
     }
-    
+
     return 0;
 }
 
+//FIXME - Currently only handles 1 file at a time
 int outputHandler(char** &argv, int len, int loc){
     //No first arg
     if(loc-1 < 0){
@@ -57,6 +82,7 @@ int outputHandler(char** &argv, int len, int loc){
 	cerr << "outputHandler error, no RHS arg" << endl;
 	return -1;
     }
+    //Fork before modding fds
     int pid = fork();
     if(pid == -1){
 	perror("outputHandler fork failed");
@@ -66,44 +92,23 @@ int outputHandler(char** &argv, int len, int loc){
     	str.append(argv[loc+1]);
     	str.append("/");
 
-	int oldFd = dup(1);
-	if(oldFd == -1){
-	    perror("outputHandler dup");
-	    return -1;
-	}
-	int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if(fd == -1){
 	    perror("open output");
 	    exit(1);
 	}
 	//Closes stdout
-	if(close(oldFd) == -1){
+	if(close(STDOUT_FILENO) == -1){
 	    perror("close output");
 	    exit(1);
 	}
 	//Fd now in stdout slot
 	if(dup2(fd, STDOUT_FILENO) == -1){
-	    perror("dup output");
+	    perror("dup2 output");
 	    exit(1);
 	}
-	//FIXME - remove later
-	//cerr << "argv[loc-2]: " << argv[loc-2] << endl;
-	//cerr << "argv[loc-1]: " << argv[loc-1] << endl;
-	//cerr << "argv[loc]: " << argv[loc] << endl;
-	//cerr << "argv[loc+1]: " << argv[loc+1] << endl;
-	//cerr << "----------------------------" << endl;
-
-	//for(unsigned i = loc+1; i < len; i++){
-	   // if(argv[i] == ">"){
-		//clear this current file, as it's not the last
-		//argv[loc+1]
-	//    }
-	//}
-
 	strcpy(argv[loc], "\0"); //Removes file name
 	strcpy(argv[loc+1], "\0"); //Removes > operator
-	//exit(0);
-	//kill(getpid(), SIGKILL);
     }else{
     	if(waitpid(pid, 0, 0) == -1){
 	    perror("outputHandler wait failed");
@@ -120,7 +125,7 @@ int redirHandler(char** argv, int len){
     int ret = 0;
     for(unsigned i = 0; i < len; i++){
 	if(strcmp(argv[i], "<") == 0){
-	    //inputHandler(argv, len, i);
+	    inputHandler(argv, len, i);
 	}else if((strcmp(argv[i], ">") == 0)){
 	    ret = outputHandler(argv, len, i);
 	    if(ret == -1){
@@ -596,10 +601,12 @@ int main(int argc, char* argv[]){
 	        }
 
 		//FIXME - REDIRECTION IMPLEMENTATION GOES HERE
-		if(redirHandler(argv, numArg) == -1){
+		int ret = 0;
+		ret = redirHandler(argv, numArg);
+		if(ret == -1){
 		    cout << "redirHandler failed" << endl;
 		    return -1;
-		    //FIXME - should it return -1 instead?
+		    //FIXME - Should child just be killed earlier? or return -1 here?
 		}
 		
 

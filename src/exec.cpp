@@ -80,10 +80,10 @@ int altInput(char** &argv, int len, int loc){
 	return -1;
     }
     
+    //Removes commands/ops that were run
     for(unsigned i = loc; i < len; i++){
 	argv[i] = argv[len]; 
     }
-
     return 0;
 }
 

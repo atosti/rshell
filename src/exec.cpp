@@ -28,28 +28,60 @@ int altInput(char** &argv, int len, int loc){
 	cerr << "alt input, no RHS arg" << endl;
 	return -1;
     }
-    string str = "./";
-    str.append(argv[loc+1]);
+    string str = "./.temp";
 
     //Opens file for reading
-    int fd = open(str.c_str(), O_RDONLY, 0);
+    int fd = open(str.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0666);
     if(fd == -1){
-    	perror("open alt input");
-	exit(1);
+	perror("open altInput");
+	return -1;
     }
+
+    //Write to str before reading from it
+    char buf[BUFSIZ];
+    strcpy(buf, argv[loc+1]);
+    strcat(buf, "\n");
+    if(write(fd, buf, strlen(buf)) == -1){
+	perror("write altInput");
+	return -1;
+    }
+
     //Closes stdin
     if(close(STDIN_FILENO) == -1){
-        perror("close alt input");
-	exit(1);
+        perror("close altInput");
+	return -1;
+    }
+    //.temp now in stdin slot
+    if(dup2(fd, STDIN_FILENO) == -1){
+	perror("dup2 altInput");
+	return -1;
+    }
+
+    //Close .temp to open stdout
+    if(close(fd) == -1){
+	perror("close2 altInput");
+	return -1;
+    }
+
+    //Open .temp for reading
+    fd = open(".temp", O_RDONLY, 0);
+    if(fd == -1){
+	perror("open2 altInput");
+    }
+
+    //Closes stdin
+    if(close(STDIN_FILENO) == -1){
+        perror("close input");
+	return -1;
     }
     //Fd now in stdin slot
     if(dup2(fd, STDIN_FILENO) == -1){
-	perror("dup2 alt input");
-	exit(1);
+	perror("dup2 input");
+	return -1;
     }
-    //FIXME - Perhaps start at loc? (used to start @ i = 1)
+    
     for(unsigned i = loc; i < len; i++){
-	argv[i] = argv[i+1]; 
+	argv[i] = argv[len]; 
     }
 
     return 0;
@@ -75,18 +107,18 @@ int fdOutput(char** &argv, int len, int loc){
     int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if(fd == -1){
     	perror("open Fdoutput");
-	exit(1);
+	return -1;
     }
 
     //Closes passed fd
     if(close(temp) == -1){
 	perror("close Fdoutput");
-	exit(1);
+	return -1;
     }
     //Fd now in old fd slot
     if(dup2(fd, temp) == -1){
 	perror("dup2 Fdoutput");
-	exit(1);
+	return -1;
     }
 
     //FIXME put into a loop and remove proper pieces
@@ -170,17 +202,17 @@ int input(char** &argv, int len, int loc){
     int fd = open(str.c_str(), O_RDONLY, 0);
     if(fd == -1){
     	perror("open input");
-	exit(1);
+	return -1;
     }
     //Closes stdin
     if(close(STDIN_FILENO) == -1){
         perror("close input");
-	exit(1);
+	return -1;
     }
     //Fd now in stdin slot
     if(dup2(fd, STDIN_FILENO) == -1){
 	perror("dup2 input");
-	exit(1);
+	return -1;
     }
     //FIXME - Perhaps start at loc? (used to start @ i = 1)
     for(unsigned i = loc; i < len; i++){
@@ -208,17 +240,17 @@ int output(char** &argv, int len, int loc){
     int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if(fd == -1){
     	perror("open output");
-	exit(1);
+	return -1;
     }
     //Closes stdout
     if(close(STDOUT_FILENO) == -1){
 	perror("close output");
-	exit(1);
+	return -1;
     }
     //Fd now in stdout slot
     if(dup2(fd, STDOUT_FILENO) == -1){
 	perror("dup2 output");
-	exit(1);
+	return -1;
     }
     //FIXME put into a loop and remove proper pieces
     //Seems to work - Test later
@@ -251,17 +283,17 @@ int append(char** &argv, int len, int loc){
     int fd = open(argv[loc+1], O_WRONLY | O_CREAT | O_APPEND, 0666);
     if(fd == -1){
 	perror("open append");
-	exit(1);
+	return -1;
     }
     //Closes stdout
     if(close(STDOUT_FILENO) == -1){
 	perror("close append");
-	exit(1);
+	return -1;
     }
     //Fd now in stdout slot
     if(dup2(fd, STDOUT_FILENO) == -1){
 	perror("dup2 append");
-	exit(1);
+	return -1;
     }
     //FIXME - loop it instead
     for(unsigned i = loc; i != len; i++){
